@@ -1,0 +1,71 @@
+# TikTokBoost
+
+**Follow-for-follow social discovery for TikTok.** Find real creators who want more
+followers, follow them yourself in the TikTok app, and they follow you back — rewarded
+with points and featured placement.
+
+> **What this app is NOT:** a bot, an auto-follower, or a fake-engagement generator.
+> TikTokBoost never logs into TikTok accounts, never creates accounts, and never
+> performs follows/likes/views automatically. Every follow happens manually by the
+> user, inside the TikTok app.
+
+## How it works
+
+1. A user creates a TikTokBoost profile and adds their TikTok username/link.
+2. They enter the **Follow Exchange** and see other real users who want followers.
+3. User A chooses to follow User B's TikTok account (opens TikTok → taps follow).
+4. User B can then follow User A back.
+5. A points/credit system organizes and rewards participation.
+
+## Version branches
+
+| Branch | Contents | Status |
+| ------ | -------- | ------ |
+| `main` | README + `.gitignore` only — kept untouched | baseline |
+| `v0.0.1` | Full Android app (MVP, demo/mock data) | current |
+
+Workflow: every update creates a new branch (`v0.0.1`, `v0.0.2`, …) carrying only the
+files needed for that version. `main` is never modified after the baseline commit.
+
+## What's in v0.0.1 (mock/demo data)
+
+- Welcome / onboarding
+- Sign up / log in (demo mode — any credentials work)
+- Home dashboard (points balance, daily check-in, stats, quick actions)
+- **Follow Exchange** — user cards with username, avatar, TikTok profile link,
+  followers requested, "Open TikTok" and "I've Followed" confirmation flow
+- My Profile (edit display name + TikTok handle)
+- Coins / points (balance, spend on featured & priority listing)
+- Earn Coins (daily check-in, follow tasks, invite, share)
+- History (follow activity log with points earned)
+- Settings (version, about, reset demo data, sign out)
+
+All users, follows and history in v0.0.1 are stored locally on-device
+(SharedPreferences). No external services are connected yet.
+
+## Tech stack
+
+- Kotlin + Jetpack Compose (Material 3)
+- Navigation Compose, single-activity
+- Min SDK 24 · Target/Compile SDK 34
+- Built with Gradle 8.7 / AGP 8.5.2
+
+## Building the APK
+
+Prerequisites: JDK 17+ and the Android SDK (platform 34, build-tools 34.0.0).
+Set `sdk.dir` in a local `local.properties` (or `ANDROID_HOME`):
+
+```bash
+./gradlew assembleDebug
+```
+
+Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
+Pre-built release artifact: `release/TikTokBoost-v0.0.1.apk` (installable on any
+Android 7.0+ device; the standard debug keystore is used, which is fine for testing).
+
+## Roadmap (later versions)
+
+- Backend + real accounts, real TikTok profile data
+- Verification that a follow actually happened (user-confirmed, still no automation)
+- Anti-abuse: report/block, trust ratings
+- Real coin store (in-app purchases)
