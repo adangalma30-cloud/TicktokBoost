@@ -1,12 +1,18 @@
 package com.tiktokboost.app.ui
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -16,10 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -31,16 +38,15 @@ import com.tiktokboost.app.ui.screens.ExchangeScreen
 import com.tiktokboost.app.ui.screens.HistoryScreen
 import com.tiktokboost.app.ui.screens.HomeScreen
 import com.tiktokboost.app.ui.screens.LoginScreen
+import com.tiktokboost.app.ui.screens.NotificationsScreen
 import com.tiktokboost.app.ui.screens.ProfileScreen
 import com.tiktokboost.app.ui.screens.SettingsScreen
 import com.tiktokboost.app.ui.screens.SignupScreen
+import com.tiktokboost.app.ui.screens.SplashScreen
 import com.tiktokboost.app.ui.screens.WelcomeScreen
-import com.tiktokboost.app.ui.theme.CardBg
-import com.tiktokboost.app.ui.theme.TextSecondary
-import com.tiktokboost.app.ui.theme.TikTokBg
-import com.tiktokboost.app.ui.theme.TikTokCyan
 
 object Routes {
+    const val SPLASH = "splash"
     const val WELCOME = "welcome"
     const val LOGIN = "login"
     const val SIGNUP = "signup"
@@ -51,6 +57,7 @@ object Routes {
     const val EARN = "earn"
     const val HISTORY = "history"
     const val SETTINGS = "settings"
+    const val NOTIFICATIONS = "notifications"
 
     val bottomTabs = listOf(HOME, EXCHANGE, COINS, PROFILE)
 }
@@ -59,7 +66,7 @@ private data class TabDef(val route: String, val label: String, val icon: ImageV
 
 private val tabs = listOf(
     TabDef(Routes.HOME, "Home", Icons.Filled.Home),
-    TabDef(Routes.EXCHANGE, "Exchange", Icons.Filled.Refresh),
+    TabDef(Routes.EXCHANGE, "Discover", Icons.Filled.Search),
     TabDef(Routes.COINS, "Coins", Icons.Filled.Star),
     TabDef(Routes.PROFILE, "Profile", Icons.Filled.Person)
 )
@@ -70,19 +77,13 @@ fun TikTokBoostApp() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    val startDest = remember {
-        when {
-            !Session.isOnboarded -> Routes.WELCOME
-            !Session.isLoggedIn -> Routes.LOGIN
-            else -> Routes.HOME
-        }
-    }
+    val cs = MaterialTheme.colorScheme
 
     Scaffold(
-        containerColor = TikTokBg,
+        containerColor = cs.background,
         bottomBar = {
             if (currentRoute in Routes.bottomTabs) {
-                NavigationBar(containerColor = CardBg) {
+                NavigationBar(containerColor = cs.surface, tonalElevation = 0.dp) {
                     tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = currentRoute == tab.route,
@@ -96,11 +97,11 @@ fun TikTokBoostApp() {
                             icon = { Icon(tab.icon, contentDescription = tab.label) },
                             label = { Text(tab.label, fontSize = 11.sp) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = TikTokCyan,
-                                selectedTextColor = TikTokCyan,
-                                unselectedIconColor = TextSecondary,
-                                unselectedTextColor = TextSecondary,
-                                indicatorColor = CardBg
+                                selectedIconColor = cs.primary,
+                                selectedTextColor = cs.primary,
+                                unselectedIconColor = cs.onSurfaceVariant,
+                                unselectedTextColor = cs.onSurfaceVariant,
+                                indicatorColor = cs.primaryContainer
                             )
                         )
                     }
@@ -110,9 +111,23 @@ fun TikTokBoostApp() {
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = startDest,
-            modifier = Modifier.padding(padding)
+            startDestination = Routes.SPLASH,
+            modifier = Modifier.padding(padding),
+            enterTransition = { fadeIn(tween(260)) + slideInVertically(tween(300)) { it / 24 } },
+            exitTransition = { fadeOut(tween(200)) },
+            popEnterTransition = { fadeIn(tween(260)) },
+            popExitTransition = { fadeOut(tween(200)) + slideOutVertically(tween(260)) { it / 24 } }
         ) {
+            composable(Routes.SPLASH) {
+                SplashScreen(
+                    onDone = {
+                        val target = postSplashStart()
+                        navController.navigate(target) {
+                            popUpTo(Routes.SPLASH) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(Routes.WELCOME) {
                 WelcomeScreen(
                     onGetStarted = {
@@ -153,7 +168,8 @@ fun TikTokBoostApp() {
                 HomeScreen(
                     onOpenExchange = { navController.navigate(Routes.EXCHANGE) },
                     onOpenEarn = { navController.navigate(Routes.EARN) },
-                    onOpenHistory = { navController.navigate(Routes.HISTORY) }
+                    onOpenHistory = { navController.navigate(Routes.HISTORY) },
+                    onOpenNotifications = { navController.navigate(Routes.NOTIFICATIONS) }
                 )
             }
             composable(Routes.EXCHANGE) {
@@ -177,6 +193,9 @@ fun TikTokBoostApp() {
             composable(Routes.HISTORY) {
                 HistoryScreen(onBack = { navController.popBackStack() })
             }
+            composable(Routes.NOTIFICATIONS) {
+                NotificationsScreen(onBack = { navController.popBackStack() })
+            }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
@@ -187,4 +206,10 @@ fun TikTokBoostApp() {
             }
         }
     }
+}
+
+private fun postSplashStart(): String = when {
+    !Session.isOnboarded -> Routes.WELCOME
+    !Session.isLoggedIn -> Routes.LOGIN
+    else -> Routes.HOME
 }

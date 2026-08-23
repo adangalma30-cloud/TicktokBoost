@@ -3,6 +3,11 @@ package com.tiktokboost.app.ui.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,9 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,21 +27,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tiktokboost.app.data.MockData
 import com.tiktokboost.app.ui.AppState
+import com.tiktokboost.app.ui.components.AnimatedCoinText
+import com.tiktokboost.app.ui.components.BrandCard
+import com.tiktokboost.app.ui.components.CoinIcon
+import com.tiktokboost.app.ui.components.Dimens
 import com.tiktokboost.app.ui.components.AppTopBar
-import com.tiktokboost.app.ui.components.CoinPill
-import com.tiktokboost.app.ui.theme.CardBg
-import com.tiktokboost.app.ui.theme.TextPrimary
-import com.tiktokboost.app.ui.theme.TextSecondary
-import com.tiktokboost.app.ui.theme.TikTokBg
-import com.tiktokboost.app.ui.theme.TikTokCyan
+import com.tiktokboost.app.ui.components.SecondaryButton
+import com.tiktokboost.app.ui.theme.GoodGreen
 
 @Composable
 fun EarnScreen(onBack: () -> Unit) {
@@ -46,7 +49,7 @@ fun EarnScreen(onBack: () -> Unit) {
     var msg by remember { mutableStateOf("") }
 
     Scaffold(
-        containerColor = TikTokBg,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = { AppTopBar("Earn Coins", onBack) }
     ) { padding ->
         Column(
@@ -54,23 +57,45 @@ fun EarnScreen(onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = Dimens.screenH)
         ) {
             Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "Current balance",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                CoinPill(AppState.coins)
+
+            // balance header
+            BrandCard {
+                Column(Modifier.padding(Dimens.card)) {
+                    Text(
+                        "Current balance",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    AnimatedCoinText(
+                        amount = AppState.coins,
+                        style = MaterialTheme.typography.headlineMedium.copy(color = MaterialTheme.colorScheme.onSurface)
+                    )
+                }
             }
 
-            Spacer(Modifier.height(16.dp))
+            AnimatedVisibility(visible = msg.isNotBlank(), enter = fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 6 }) {
+                Row(
+                    Modifier
+                        .padding(top = 10.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    CoinIcon(size = 16.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(msg, color = GoodGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
 
             TaskRow(
-                icon = "\uD83D\uDCC5",
+                icon = "📅",
                 title = "Daily Check-in",
                 desc = "Claim your free daily bonus",
                 reward = 2,
@@ -84,34 +109,34 @@ fun EarnScreen(onBack: () -> Unit) {
 
             val followProgress = minOf(AppState.followedCount, 3)
             TaskRow(
-                icon = "\uD83E\uDD1D",
+                icon = "🤝",
                 title = "Follow 3 creators",
-                desc = "Progress: $followProgress/3 — follow users in the Exchange",
+                desc = "Progress: $followProgress/3 — follow users in Discovery",
                 reward = 15,
                 claimed = AppState.isTaskClaimed("t_follow3"),
                 claimable = followProgress >= 3 && !AppState.isTaskClaimed("t_follow3")
             ) {
-                val ok = AppState.claimTask("t_follow3", 15)
-                msg = if (ok) "+15 claimed! \uD83C\uDF89" else "Task already claimed"
+                val ok = AppState.claimTask("t_follow3", 15, "Task: Follow 3 creators")
+                msg = if (ok) "+15 claimed! 🎉" else "Task already claimed"
             }
 
             Spacer(Modifier.height(10.dp))
 
             TaskRow(
-                icon = "\u2728",
+                icon = "✨",
                 title = "Complete your profile",
                 desc = "Add your display name and TikTok handle",
                 reward = 10,
                 claimed = AppState.isTaskClaimed("t_profile")
             ) {
-                val ok = AppState.claimTask("t_profile", 10)
+                val ok = AppState.claimTask("t_profile", 10, "Task: Complete profile")
                 msg = if (ok) "+10 claimed!" else "Task already claimed"
             }
 
             Spacer(Modifier.height(10.dp))
 
             TaskRow(
-                icon = "\uD83C\uDF81",
+                icon = "🎁",
                 title = "Invite a friend",
                 desc = "Share your invite link with a friend",
                 reward = 50,
@@ -119,35 +144,40 @@ fun EarnScreen(onBack: () -> Unit) {
             ) {
                 val link = "https://tiktokboost.app/i/${AppState.tiktokUsername}"
                 val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                cm.setPrimaryClip(ClipData.newPlainText("TikTokBoost invite", link))
-                val ok = AppState.claimTask("t_invite", 50)
-                msg = if (ok) "+50 claimed! Invite link copied \uD83D\uDCCB" else "Invite link copied \uD83D\uDCCB"
+                cm.setPrimaryClip(ClipData.newPlainText("TickTokBoost invite", link))
+                val ok = AppState.claimTask("t_invite", 50, "Task: Invite a friend")
+                msg = if (ok) "+50 claimed! Invite link copied 📋" else "Invite link copied 📋"
             }
 
             Spacer(Modifier.height(10.dp))
 
             TaskRow(
-                icon = "\uD83D\uDCE4",
+                icon = "📤",
                 title = "Share the app",
-                desc = "Share TikTokBoost with your community",
+                desc = "Share TickTokBoost with your community",
                 reward = 5,
                 claimed = AppState.isTaskClaimed("t_share")
             ) {
-                val ok = AppState.claimTask("t_share", 5)
+                val ok = AppState.claimTask("t_share", 5, "Task: Share the app")
                 msg = if (ok) "+5 claimed!" else "Task already claimed"
             }
 
-            msg.takeIf { it.isNotBlank() }?.let {
-                Spacer(Modifier.height(12.dp))
-                Text(it, color = TikTokCyan, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Spacer(Modifier.height(18.dp))
+
+            BrandCard {
+                Text(
+                    "💡 Tip",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Every completed exchange in Discovery earns its coin reward (released after the counterpart confirms), and every confirmed follow-back earns ${MockData.REWARD_FOLLOW_BACK}.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            Spacer(Modifier.height(20.dp))
-            Text(
-                "Tip: every follow in the Exchange also earns ${MockData.REWARD_FOLLOW} coins, and every confirmed follow-back earns ${MockData.REWARD_FOLLOW_BACK}.",
-                color = TextSecondary,
-                fontSize = 13.sp
-            )
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -163,32 +193,28 @@ private fun TaskRow(
     claimable: Boolean = true,
     onClaim: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBg)
-    ) {
+    val cs = MaterialTheme.colorScheme
+    BrandCard {
         Row(
             Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
-            Text(icon, fontSize = 24.sp)
+            Text(icon, fontSize = 22.sp)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(title, color = TextPrimary, fontWeight = FontWeight.Bold)
-                Text(desc, color = TextSecondary, fontSize = 12.sp)
+                Text(title, style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
+                Text(desc, style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
             }
             Spacer(Modifier.width(8.dp))
             if (claimed) {
-                Text("\u2713", color = TikTokCyan, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("✓", color = cs.secondary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             } else {
-                OutlinedButton(
-                    onClick = onClaim,
+                SecondaryButton(
+                    "+$reward",
                     enabled = claimable,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("+$reward", fontWeight = FontWeight.Bold)
-                }
+                    modifier = Modifier.width(76.dp),
+                    onClick = onClaim
+                )
             }
         }
     }

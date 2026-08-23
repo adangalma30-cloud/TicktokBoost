@@ -1,13 +1,17 @@
 package com.tiktokboost.app.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,11 +30,8 @@ import com.tiktokboost.app.data.MockData
 import com.tiktokboost.app.data.Session
 import com.tiktokboost.app.ui.AppState
 import com.tiktokboost.app.ui.components.AppTopBar
-import com.tiktokboost.app.ui.components.GradientButton
-import com.tiktokboost.app.ui.theme.TextPrimary
-import com.tiktokboost.app.ui.theme.TextSecondary
-import com.tiktokboost.app.ui.theme.TikTokBg
-import com.tiktokboost.app.ui.theme.TikTokPink
+import com.tiktokboost.app.ui.components.BrandButton
+import com.tiktokboost.app.ui.components.LogoMark
 
 @Composable
 fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
@@ -38,7 +39,7 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
     var password by remember { mutableStateOf("") }
 
     Scaffold(
-        containerColor = TikTokBg,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = { AppTopBar("Log in", onBack) }
     ) { padding ->
         Column(
@@ -47,17 +48,23 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
                 .padding(padding)
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState())
+                .imePadding()
         ) {
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(20.dp))
+            LogoMark(size = 44.dp)
+            Spacer(Modifier.height(14.dp))
             Text(
                 "Welcome back 👋",
-                color = TextPrimary,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.ExtraBold
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground
             )
-            Spacer(Modifier.height(8.dp))
-            Text("Log in to continue growing.", color = TextSecondary, fontSize = 14.sp)
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Log in to continue growing.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(22.dp))
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -74,8 +81,8 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(24.dp))
-            GradientButton("Log in") {
+            Spacer(Modifier.height(22.dp))
+            BrandButton("Log in") {
                 Session.isLoggedIn = true
                 AppState.refresh()
                 onDone()
@@ -83,8 +90,8 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             Text(
                 "Demo mode: any email and password work.",
-                color = TextSecondary,
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -102,7 +109,7 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
-        containerColor = TikTokBg,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = { AppTopBar("Create account", onBack) }
     ) { padding ->
         Column(
@@ -111,21 +118,23 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
                 .padding(padding)
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState())
+                .imePadding()
         ) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
+            LogoMark(size = 44.dp)
+            Spacer(Modifier.height(14.dp))
             Text(
-                "Join TikTokBoost 🚀",
-                color = TextPrimary,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.ExtraBold
+                "Join TickTokBoost 🚀",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 "Add your TikTok handle so other creators can find you.",
-                color = TextSecondary,
-                fontSize = 14.sp
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(18.dp))
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -161,10 +170,10 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
             )
             error?.let {
                 Spacer(Modifier.height(10.dp))
-                Text(it, color = TikTokPink, fontSize = 13.sp)
+                Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
             }
-            Spacer(Modifier.height(20.dp))
-            GradientButton("Create Account") {
+            Spacer(Modifier.height(18.dp))
+            BrandButton("Create Account") {
                 val handle = tiktok.trim().removePrefix("@")
                 if (name.isBlank() || email.isBlank() || password.isBlank() || handle.isBlank()) {
                     error = "Please fill in all fields."
@@ -173,8 +182,11 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
                     Session.email = email.trim()
                     Session.tiktokUsername = handle
                     Session.isLoggedIn = true
-                    Session.addCoins(MockData.WELCOME_BONUS)
-                    Session.addHistory(handle, "Welcome bonus for @$handle", MockData.WELCOME_BONUS)
+                    AppState.welcomeBonus(handle)
+                    Session.addNotification(
+                        "coins", "Welcome bonus: ${MockData.WELCOME_BONUS} coins.",
+                        "Thanks for joining TickTokBoost — here's ${MockData.WELCOME_BONUS} coins to get you started."
+                    )
                     AppState.refresh()
                     onDone()
                 }
@@ -182,8 +194,8 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
             Spacer(Modifier.height(10.dp))
             Text(
                 "You'll get a ${MockData.WELCOME_BONUS} coin welcome bonus 🎉",
-                color = TextSecondary,
-                fontSize = 13.sp,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
