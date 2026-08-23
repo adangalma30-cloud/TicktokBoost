@@ -1,0 +1,15 @@
+# Built artifacts
+build/
+.gradle/
+*.idsig
+
+# Local machine config
+local.properties
+
+# IDE / OS
+.idea/
+*.iml
+.kotlin/
+.DS_Store
+captures/
+.cxx/
