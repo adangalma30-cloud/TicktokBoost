@@ -118,9 +118,13 @@ private fun TransactionRow(tx: Transaction) {
                 Column(Modifier.weight(1f)) {
                     Text(
                         when (tx.type) {
-                            TxType.FOLLOW -> "Exchange with @${tx.username}"
+                            TxType.FOLLOW -> "Exchange · @${tx.username}"
                             TxType.FOLLOW_BACK -> "@${tx.username} followed you back"
                             TxType.PURCHASE -> tx.note.ifBlank { "Purchase" }
+                            TxType.BOOST -> tx.note.ifBlank { "Boost" }
+                            TxType.PREMIUM -> tx.note.ifBlank { "Subscription" }
+                            TxType.STREAK -> tx.note.ifBlank { "Streak bonus" }
+                            TxType.ACHIEVEMENT -> tx.note.ifBlank { "Achievement" }
                             TxType.BONUS -> tx.note.ifBlank { "Bonus" }
                         },
                         style = MaterialTheme.typography.titleSmall,

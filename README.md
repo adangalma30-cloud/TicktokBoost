@@ -23,10 +23,24 @@ with points and featured placement.
 | ------ | -------- | ------ |
 | `main` | original baseline — kept untouched | baseline |
 | `0.0.1` | Android app MVP (demo/mock data) + built APK | previous |
-| `0.0.2` | Polish release: new icon, splash, trust system, transactions, notifications, dark/light | current |
+| `0.0.2` | Polish release: icon, splash, trust system, transactions, notifications, dark/light | previous |
+| `0.0.3` | Economy hardening, anti-abuse, disputes, Premium (mock), admin dashboard, TikTok-inspired identity | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v0.0.3
+
+- Harder coin economy (configurable): 20 starter coins, 5 per confirmed exchange, 25/day cap, 10-min cooldown — all in `EconomyConfig`
+- Anti-farming: repeat-pairing block, burst detection, Warning → Review → Restriction ladder (never auto-bans)
+- Dispute system with reasons, withdraw, admin review queue that resolves disputes
+- Full coin types: available / pending / lifetime earned / lifetime spent — every movement is a ledger transaction
+- Boost Visibility tiers (Standard 10 · Boosted 25 · Featured 50) with duration status
+- Premium + Premium Pro (mock payments): badges, priority discovery, advanced filters, analytics, daily bonus, plan limits
+- Ranking-based discovery: trust + activity + completeness + boosts + premium, freshness rotation, category filters
+- Profile completion score, streaks with small rewards, cosmetic achievements
+- Admin dashboard: economy analytics, dispute queue, abuse watchlist, testing controls
+- New near-black + cyan/pink identity, new icon, 5-tab navigation, 4-step onboarding
 
 ## What's new in v0.0.2
 

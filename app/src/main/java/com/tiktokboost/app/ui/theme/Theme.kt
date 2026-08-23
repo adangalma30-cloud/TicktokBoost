@@ -7,23 +7,23 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 private val DarkScheme = darkColorScheme(
-    primary = BrandPink,
-    onPrimary = Color.White,
-    primaryContainer = BrandPink.copy(alpha = 0.16f),
-    onPrimaryContainer = BrandPink,
-    secondary = BrandCyan,
-    onSecondary = Color(0xFF00323A),
-    secondaryContainer = BrandCyan.copy(alpha = 0.14f),
-    onSecondaryContainer = BrandCyan,
-    tertiary = BrandIndigoSoft,
+    primary = BrandCyan,
+    onPrimary = Color(0xFF00302E),
+    primaryContainer = BrandCyan.copy(alpha = 0.14f),
+    onPrimaryContainer = BrandCyan,
+    secondary = BrandPink,
+    onSecondary = Color.White,
+    secondaryContainer = BrandPink.copy(alpha = 0.16f),
+    onSecondaryContainer = BrandPink,
+    tertiary = BrandPink,
     onTertiary = Color.White,
-    tertiaryContainer = BrandIndigo.copy(alpha = 0.20f),
-    onTertiaryContainer = BrandIndigoSoft,
+    tertiaryContainer = BrandPink.copy(alpha = 0.16f),
+    onTertiaryContainer = BrandPink,
     background = Midnight,
     onBackground = DarkTextPrimary,
     surface = DarkSurface,
@@ -39,18 +39,18 @@ private val DarkScheme = darkColorScheme(
 )
 
 private val LightScheme = lightColorScheme(
-    primary = BrandPink,
+    primary = BrandCyanDeep,
     onPrimary = Color.White,
-    primaryContainer = BrandPink.copy(alpha = 0.10f),
-    onPrimaryContainer = BrandPink,
-    secondary = BrandCyanDeep,
+    primaryContainer = BrandCyanDeep.copy(alpha = 0.12f),
+    onPrimaryContainer = Color(0xFF00615F),
+    secondary = BrandPinkDeep,
     onSecondary = Color.White,
-    secondaryContainer = BrandCyanDeep.copy(alpha = 0.12f),
-    onSecondaryContainer = Color(0xFF006975),
-    tertiary = BrandIndigo,
+    secondaryContainer = BrandPinkDeep.copy(alpha = 0.10f),
+    onSecondaryContainer = BrandPinkDeep,
+    tertiary = BrandPinkDeep,
     onTertiary = Color.White,
-    tertiaryContainer = BrandIndigo.copy(alpha = 0.10f),
-    onTertiaryContainer = Color(0xFF2A3FBE),
+    tertiaryContainer = BrandPinkDeep.copy(alpha = 0.10f),
+    onTertiaryContainer = BrandPinkDeep,
     background = Daylight,
     onBackground = LightTextPrimary,
     surface = LightSurface,
@@ -59,13 +59,12 @@ private val LightScheme = lightColorScheme(
     onSurfaceVariant = LightTextSecondary,
     outline = LightOutline,
     outlineVariant = LightOutline.copy(alpha = 0.7f),
-    error = AlertRed,
+    error = BrandPinkDeep,
     onError = Color.White,
-    errorContainer = AlertRed.copy(alpha = 0.10f),
-    onErrorContainer = Color(0xFFB02540)
+    errorContainer = BrandPinkDeep.copy(alpha = 0.10f),
+    onErrorContainer = Color(0xFF8E1037)
 )
 
-/** One type scale for the whole product — weights and sizes stay consistent across screens. */
 val BoostTypography = Typography(
     displaySmall = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp),
     headlineMedium = TextStyle(fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.3).sp),

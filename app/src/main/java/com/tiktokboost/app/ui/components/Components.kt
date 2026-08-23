@@ -84,9 +84,11 @@ import com.tiktokboost.app.R
 import com.tiktokboost.app.data.Trust
 import com.tiktokboost.app.data.TxStatus
 import com.tiktokboost.app.ui.AppState
-import com.tiktokboost.app.ui.theme.AccentPurple
+import com.tiktokboost.app.ui.theme.SigGradientStart
+import com.tiktokboost.app.ui.theme.SigGradientEnd
+import com.tiktokboost.app.data.PremiumTier
+import com.tiktokboost.app.data.BoostTier
 import com.tiktokboost.app.ui.theme.BrandCyan
-import com.tiktokboost.app.ui.theme.BrandIndigo
 import com.tiktokboost.app.ui.theme.BrandPink
 import com.tiktokboost.app.ui.theme.CoinGold
 import com.tiktokboost.app.ui.theme.CoinGoldDeep
@@ -118,7 +120,7 @@ private const val LOGO_ARROW_FROM_X = 27f
 private const val LOGO_ARROW_FROM_Y = 60f
 private const val LOGO_ARROW_TO_X = 64f
 private const val LOGO_ARROW_TO_Y = 32f
-private val LogoFigureColors = listOf(Color(0xFF9FB0FF), Color(0xFF6E80F8), Color(0xFF3D51EC))
+private val LogoFigureColors = listOf(Color(0xFF9C9CB0), Color(0xFF4DE0DC), Color(0xFF7A96))
 
 /**
  * The TikTokBoost "Ascent Trio" brand mark — three creators rising along a
@@ -159,12 +161,12 @@ fun LogoMark(modifier: Modifier = Modifier, size: Dp) {
             close()
         }
         val brush = Brush.linearGradient(
-            listOf(Color(0xFF14C8F0), Color(0xFF4A63F5)),
+            listOf(Color(0xFF25F4EE), Color(0xFFFE2C55)),
             start = Offset(ax, ay),
             end = Offset(tipX, tipY)
         )
         drawPath(arrow, brush)
-        drawPath(head, Color(0xFF4A63F5))
+        drawPath(head, Color(0xFFFE2C55))
 
         // ---- three ascending creators ----
         data class Fig(val hx: Float, val hy: Float, val hr: Float, val tx: Float, val ty: Float, val tw: Float, val th: Float, val tr: Float)
@@ -257,7 +259,7 @@ fun BrandButton(
             .clip(RoundedCornerShape(Dimens.cornerControl))
             .background(
                 Brush.horizontalGradient(
-                    if (enabled) listOf(TikTokPink, AccentPurple) else listOf(Color(0xFF9A93A8), Color(0xFF7E7890))
+                    if (enabled) listOf(SigGradientStart, SigGradientEnd) else listOf(Color(0xFF8A8A99), Color(0xFF7A7A8C))
                 )
             )
     ) {
@@ -794,4 +796,109 @@ fun AppTopBar(
             titleContentColor = cs.onSurface
         )
     )
+}
+
+// ═══════════════════════════════ v0.0.3 brand components ═══════════════════════════════
+
+/**
+ * 💎 Premium / 👑 Pro badge — elegant, subtle, gradient-anchored.
+ * Shown next to usernames, in the nav area and on the Premium page.
+ */
+@Composable
+fun PremiumBadge(tier: PremiumTier, modifier: Modifier = Modifier, compact: Boolean = false) {
+    if (tier == PremiumTier.FREE) return
+    val label = if (tier == PremiumTier.PRO) "Pro" else "Premium"
+    val emoji = if (tier == PremiumTier.PRO) "👑" else "💎"
+    val brush = Brush.horizontalGradient(listOf(SigGradientStart, SigGradientEnd))
+    Row(
+        modifier
+            .clip(RoundedCornerShape(50))
+            .background(brush)
+            .padding(horizontal = if (compact) 7.dp else 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(emoji, fontSize = if (compact) 10.sp else 12.sp)
+        Spacer(Modifier.width(4.dp))
+        Text(
+            label,
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = if (compact) 10.sp else 11.sp
+        )
+    }
+}
+
+/** 🔥 streak chip — small, celebratory, never gaudy. */
+@Composable
+fun StreakChip(days: Int, modifier: Modifier = Modifier) {
+    if (days <= 0) return
+    Row(
+        modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("🔥", fontSize = 12.sp)
+        Spacer(Modifier.width(4.dp))
+        Text("$days-Day Streak", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+/** Boost status chip with remaining time. */
+@Composable
+fun BoostChip(tier: BoostTier, msRemaining: Long, modifier: Modifier = Modifier) {
+    Row(
+        modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("🚀", fontSize = 12.sp)
+        Spacer(Modifier.width(4.dp))
+        val hours = msRemaining / 3_600_000f
+        Text(
+            "${tier.label} · ${"%.1f".format(hours)}h left",
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+/** Profile completion meter — "Profile 80% Complete". */
+@Composable
+fun ProfileCompletionBar(percent: Int, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Profile $percent% complete",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            if (percent < 100) {
+                Text(
+                    "Finish it →",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        LinearProgressIndicator(
+            progress = { percent / 100f },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    }
+}
+
+/** Signature gradient surface — used sparingly (premium hero, boost cards). */
+@Composable
+fun SignatureGradient(content: @Composable () -> Unit) {
+    Box(Modifier.background(Brush.linearGradient(listOf(SigGradientStart, SigGradientEnd)))) { content() }
 }

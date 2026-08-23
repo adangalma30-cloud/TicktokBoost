@@ -39,8 +39,10 @@ import com.tiktokboost.app.ui.components.StaggeredAppear
 import com.tiktokboost.app.ui.components.relativeTime
 import com.tiktokboost.app.ui.theme.CoinGoldDeep
 import com.tiktokboost.app.ui.theme.GoodGreen
-import com.tiktokboost.app.ui.theme.BrandCyan
+import androidx.compose.material.icons.filled.Warning
+import com.tiktokboost.app.ui.theme.WarnAmber
 import com.tiktokboost.app.ui.theme.InfoBlue
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun NotificationsScreen(onBack: () -> Unit) {
@@ -94,6 +96,13 @@ private fun NotificationCard(n: AppNotification) {
         "exchange" -> GoodGreen to Icons.Filled.CheckCircle
         "coins" -> CoinGoldDeep to null
         "trust" -> InfoBlue to null
+        "dispute" -> cs.error to Icons.Filled.Warning
+        "abuse" -> cs.error to Icons.Filled.Warning
+        "limit" -> WarnAmber to null
+        "streak" -> WarnAmber to null
+        "premium" -> InfoBlue to null
+        "boost" -> InfoBlue to null
+        "achievement" -> GoodGreen to null
         else -> cs.onSurfaceVariant to Icons.Filled.Notifications
     }
     BrandCard {
@@ -102,9 +111,14 @@ private fun NotificationCard(n: AppNotification) {
                 Modifier.size(38.dp).clip(CircleShape).background(tint.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
-                when {
-                    n.kind == "coins" -> com.tiktokboost.app.ui.components.CoinIcon(size = 18.dp)
-                    n.kind == "trust" -> Icon(painterResource(R.drawable.ic_trophy), null, tint = tint, modifier = Modifier.size(18.dp))
+                when (n.kind) {
+                    "coins" -> com.tiktokboost.app.ui.components.CoinIcon(size = 18.dp)
+                    "trust" -> Icon(painterResource(R.drawable.ic_trophy), null, tint = tint, modifier = Modifier.size(18.dp))
+                    "limit" -> Icon(painterResource(R.drawable.ic_clock), null, tint = tint, modifier = Modifier.size(18.dp))
+                    "streak" -> Text("🔥", fontSize = 16.sp)
+                    "premium" -> Text(if (n.title.contains("Pro", true)) "👑" else "💎", fontSize = 16.sp)
+                    "boost" -> Text("🚀", fontSize = 16.sp)
+                    "achievement" -> Text("🏆", fontSize = 16.sp)
                     else -> Icon(icon ?: Icons.Filled.Notifications, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
                 }
             }

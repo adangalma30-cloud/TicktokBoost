@@ -19,16 +19,16 @@ FIGURES = [  # (head_cx, head_cy, head_r, torso_x, torso_w, torso_y, torso_h, to
     (52.5, 44.5, 7.4, 44.6, 15.8, 53.6, 14.4, 5.1),
     (67.5, 41.5, 8.8, 57.9, 19.2, 49.0, 19.0, 6.2),
 ]
-FIG_COLORS = ["#9FB0FF", "#6E80F8", "#3D51EC"]
+FIG_COLORS = ["#9C9CB0", "#4DE0DC", "#FF7A96"]
 
 A, B     = (27.0, 60.0), (64.0, 32.0)   # arrow shaft
 HALF     = 4.2
 TIP      = (69.0, 29.5)
 WING     = 8.2
 
-ARROW_FROM, ARROW_TO = "#14C8F0", "#4A63F5"
-BG_FROM, BG_TO       = "#F7F9FF", "#E9EEFC"
-MIDNIGHT             = "#0B0E1A"
+ARROW_FROM, ARROW_TO = "#25F4EE", "#FE2C55"
+BG_FROM, BG_TO       = "#101018", "#06060C"
+MIDNIGHT             = "#0A0A12"
 
 class X:
     """coordinate transformer: 108-viewport -> output space"""

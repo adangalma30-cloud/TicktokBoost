@@ -3,7 +3,6 @@ package com.tiktokboost.app.ui.screens
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,20 +16,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +45,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tiktokboost.app.R
+import com.tiktokboost.app.data.EconomyConfig
+import com.tiktokboost.app.data.FailureReason
 import com.tiktokboost.app.data.MockData
+import com.tiktokboost.app.data.PremiumTier
 import com.tiktokboost.app.data.TxStatus
 import com.tiktokboost.app.data.User
 import com.tiktokboost.app.ui.AppState
@@ -57,6 +58,7 @@ import com.tiktokboost.app.ui.components.CoinIcon
 import com.tiktokboost.app.ui.components.Dimens
 import com.tiktokboost.app.ui.components.EmptyState
 import com.tiktokboost.app.ui.components.GradientAvatar
+import com.tiktokboost.app.ui.components.PremiumBadge
 import com.tiktokboost.app.ui.components.SecondaryButton
 import com.tiktokboost.app.ui.components.ShimmerBox
 import com.tiktokboost.app.ui.components.StaggeredAppear
@@ -68,98 +70,129 @@ import com.tiktokboost.app.ui.components.statusHint
 import com.tiktokboost.app.ui.theme.GoodGreen
 
 @Composable
-fun ExchangeScreen() {
+fun ExchangeScreen(onOpenPremium: () -> Unit) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf(MockData.filters.first()) }
+    var category by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var toast by remember { mutableStateOf<String?>(null) }
 
-    // short skeleton pass on first entry — data loads instantly in the demo,
-    // but the UI shows the same polished loading state a real backend would.
     LaunchedEffect(Unit) {
         loading = true
         kotlinx.coroutines.delay(700)
         loading = false
     }
 
-    val filtered = remember(query, filter, AppState.transactions.size) {
-        MockData.applyFilter(MockData.users, filter).filter { u ->
-            query.isBlank() ||
-                u.username.contains(query.trim().removePrefix("@"), ignoreCase = true) ||
-                u.displayName.contains(query, ignoreCase = true) ||
-                u.niche.contains(query, ignoreCase = true)
+    val ranked = remember(query, filter, category, AppState.transactions.size, AppState.premium) {
+        AppState.rankedCreators(query, filter, category)
+    }
+
+    LaunchedEffect(toast) {
+        if (toast != null) {
+            kotlinx.coroutines.delay(3200)
+            toast = null
         }
     }
 
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.padding(horizontal = Dimens.screenH)) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(14.dp))
             Text(
                 "Creator Discovery",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                "Follow real creators → they follow you back.",
+                "Real creators, ranked by trust & relevance.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Search creators, @username, niche") },
+                placeholder = { Text("Search creators, @username, category") },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { query = "" }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Clear search")
+                            Icon(Icons.Filled.Close, contentDescription = "Clear")
                         }
                     }
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(Dimens.cornerControl),
-                colors = OutlinedTextFieldDefaults.colors(),
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp)
+)
         }
 
+        // main filters
         LazyRow(
             contentPadding = PaddingValues(horizontal = Dimens.screenH),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(MockData.filters) { f ->
                 FilterChip(
-                    selected = filter == f,
-                    onClick = { filter = f },
+                    selected = filter == f && category == null,
+                    onClick = { filter = f; category = null },
                     label = { Text(f) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = androidx.compose.ui.graphics.Color.White,
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        labelColor = MaterialTheme.colorScheme.onSurface
-                    )
+                    colors = chipColors()
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        // category filters (advanced filters are a premium perk)
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = Dimens.screenH),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(EconomyConfig.categories) { c ->
+                val locked = AppState.premium == PremiumTier.FREE
+                FilterChip(
+                    selected = category == c,
+                    onClick = { if (locked) onOpenPremium() else category = if (category == c) null else c },
+                    label = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (locked) {
+                                Icon(Icons.Filled.Lock, null, Modifier.size(11.dp))
+                                Spacer(Modifier.width(4.dp))
+                            }
+                            Text(c)
+                        }
+                    },
+                    colors = chipColors()
                 )
             }
         }
 
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
+
+        toast?.let { msg ->
+            Text(
+                msg,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.secondary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.screenH)
+            )
+            Spacer(Modifier.height(4.dp))
+        }
 
         when {
             loading -> {
                 LazyColumn(
                     contentPadding = PaddingValues(horizontal = Dimens.screenH, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(3) { SkeletonCreatorCard() }
-                }
+                ) { items(3) { SkeletonCreatorCard() } }
             }
-            filtered.isEmpty() -> {
+            ranked.isEmpty() -> {
                 EmptyState(
                     icon = Icons.Filled.Search,
                     title = "No creators found.",
-                    subtitle = "Try a different name or filter."
+                    subtitle = "Try a different search or filter."
                 )
             }
             else -> {
@@ -167,9 +200,9 @@ fun ExchangeScreen() {
                     contentPadding = PaddingValues(horizontal = Dimens.screenH, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(filtered, key = { it.id }) { user ->
-                        StaggeredAppear(index = filtered.indexOf(user) % 6) {
-                            CreatorCard(user, context)
+                    items(ranked, key = { it.id }) { user ->
+                        StaggeredAppear(index = ranked.indexOf(user) % 6) {
+                            CreatorCard(user, context) { toast = it }
                         }
                     }
                 }
@@ -178,7 +211,14 @@ fun ExchangeScreen() {
     }
 }
 
-/** Skeleton placeholder while the creator list "loads". */
+@Composable
+private fun chipColors() = FilterChipDefaults.filterChipColors(
+    selectedContainerColor = MaterialTheme.colorScheme.primary,
+    selectedLabelColor = androidx.compose.ui.graphics.Color.White,
+    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+    labelColor = MaterialTheme.colorScheme.onSurface
+)
+
 @Composable
 private fun SkeletonCreatorCard() {
     BrandCard {
@@ -193,65 +233,53 @@ private fun SkeletonCreatorCard() {
                 }
             }
             Spacer(Modifier.height(14.dp))
-            ShimmerBox(modifier = Modifier.fillMaxWidth().height(12.dp))
-            Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ShimmerBox(modifier = Modifier.width(84.dp).height(24.dp), corner = 12.dp)
                 ShimmerBox(modifier = Modifier.width(64.dp).height(24.dp), corner = 12.dp)
                 ShimmerBox(modifier = Modifier.width(74.dp).height(24.dp), corner = 12.dp)
-            }
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ShimmerBox(modifier = Modifier.weight(1f).height(46.dp))
-                ShimmerBox(modifier = Modifier.weight(1f).height(46.dp))
             }
         }
     }
 }
 
 @Composable
-private fun CreatorCard(user: User, context: Context) {
+private fun CreatorCard(user: User, context: Context, onToast: (String) -> Unit) {
     val cs = MaterialTheme.colorScheme
     val status = AppState.followStatus(user.id)
     val tx = AppState.transactionFor(user.id)
+    val block = AppState.exchangeBlockReason(user)
 
     BrandCard {
         Column(Modifier.padding(Dimens.card)) {
 
-            // ── identity row ─────────────────────────────────────────────
+            // ── identity ─────────────────────────────────────────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
-                GradientAvatar(user.displayName, user.hueSeed, 54.dp)
+                GradientAvatar(user.displayName, user.hueSeed, 52.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             user.displayName,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = cs.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            style = MaterialTheme.typography.titleMedium, color = cs.onSurface,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text(user.country, fontSize = 13.sp)
+                        PremiumBadge(tier = user.premium, compact = true)
+                        Spacer(Modifier.width(5.dp))
+                        Text(user.country, fontSize = 12.sp)
                     }
-                    Text(
-                        "@${user.username}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = cs.onSurfaceVariant
-                    )
+                    Text("@${user.username}", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painterResource(R.drawable.ic_bolt),
-                            contentDescription = null,
-                            tint = cs.secondary,
-                            modifier = Modifier.size(11.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
                         Text(
-                            "${user.platform}: @${user.externalHandle}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = cs.secondary,
-                            fontWeight = FontWeight.SemiBold
+                            user.category,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cs.primary, fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "· active ${formatActive(user.lastActiveMinutesAgo)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cs.onSurfaceVariant
                         )
                     }
                 }
@@ -260,119 +288,119 @@ private fun CreatorCard(user: User, context: Context) {
 
             Spacer(Modifier.height(8.dp))
             Text(
-                user.bio,
-                style = MaterialTheme.typography.bodyMedium,
-                color = cs.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                user.bio, style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant,
+                maxLines = 2, overflow = TextOverflow.Ellipsis
             )
 
             Spacer(Modifier.height(10.dp))
 
-            // ── exchange stats ───────────────────────────────────────────
+            // ── stats: rate · exchanges · reward · visibility ──────────────
             Row(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Stat(icon = { Icon(Icons.Filled.Done, null, tint = GoodGreen, modifier = Modifier.size(13.dp)) },
-                     label = "${user.successfulExchanges} exchanges")
-                Stat(icon = { Icon(Icons.Filled.CheckCircle, null, tint = cs.tertiary, modifier = Modifier.size(13.dp)) },
-                     label = "${user.completionRate}% rate")
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    CoinIcon(size = 14.dp)
+                    Icon(Icons.Filled.CheckCircle, null, tint = cs.primary, modifier = Modifier.size(12.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("+${user.coinReward}", color = androidx.compose.ui.graphics.Color(0xFFF5A623), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("${user.completionRate}%", style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Done, null, tint = GoodGreen, modifier = Modifier.size(12.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("${user.successfulExchanges} exch.", style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CoinIcon(size = 13.dp)
+                    Spacer(Modifier.width(4.dp))
+                    Text("+${user.coinReward}", color = androidx.compose.ui.graphics.Color(0xFFF5A623), fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 }
                 Spacer(Modifier.weight(1f))
-                Text(
-                    "${formatCount(user.followers)} followers",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = cs.onSurfaceVariant
-                )
+                if (user.activeBoost != null) {
+                    Text("🚀 ${user.activeBoost!!.label}", style = MaterialTheme.typography.labelSmall, color = cs.secondary, fontWeight = FontWeight.Bold)
+                } else {
+                    Text("${formatCount(user.followers)} followers", style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
+                }
             }
 
             Spacer(Modifier.height(12.dp))
 
-            // ── actions by relationship state ────────────────────────────
+            // ── actions by state ──────────────────────────────────────────
             when {
-                status == null -> {
+                status == null && block == null -> {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        SecondaryButton(
-                            "Open Profile",
-                            modifier = Modifier.weight(1f),
-                            onClick = { openTikTok(context, user.profileUrl) }
-                        )
+                        SecondaryButton("Open Profile", modifier = Modifier.weight(1f)) {
+                            openTikTok(context, user.profileUrl)
+                        }
                         BrandButton(
-                            "I've Completed  +${user.coinReward}",
-                            modifier = Modifier.weight(1.25f),
-                            onClick = { AppState.completeFollow(user) }
-                        )
+                            "Complete  +${user.coinReward}",
+                            modifier = Modifier.weight(1.2f)
+                        ) {
+                            val res = AppState.completeFollow(user)
+                            onToast(if (res is com.tiktokboost.app.data.EconomyResult.Success) (res.message ?: "Pending confirmation") else AppState.detailFor((res as com.tiktokboost.app.data.EconomyResult.Failure).reason))
+                        }
+                    }
+                }
+                status == null && block != null -> {
+                    val detail = when (block) {
+                        FailureReason.COOLDOWN_ACTIVE -> "Cooldown active — ${AppState.cooldownRemainingMs / 60000 + 1} min left"
+                        else -> AppState.detailFor(block)
+                    }
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(Icons.Filled.Lock, null, tint = cs.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(detail, style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    SecondaryButton("Open Profile", modifier = Modifier.fillMaxWidth()) {
+                        openTikTok(context, user.profileUrl)
                     }
                 }
                 status == "followed" -> {
-                    val pending = tx?.status == TxStatus.PENDING
-                    val disputed = tx?.status == TxStatus.DISPUTED
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         StatusBadge(tx?.status ?: TxStatus.PENDING)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            statusHint(tx?.status ?: TxStatus.PENDING) + " — @${user.username}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = cs.onSurfaceVariant
+                            statusHint(tx?.status ?: TxStatus.PENDING),
+                            style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
                         )
                     }
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        SecondaryButton(
-                            "Open Profile",
-                            modifier = Modifier.weight(1f),
-                            onClick = { openTikTok(context, user.profileUrl) }
-                        )
-                        if (pending || disputed) {
-                            BrandButton(
-                                "Waiting…",
-                                enabled = false,
-                                modifier = Modifier.weight(1.25f),
-                                onClick = {}
-                            )
+                        SecondaryButton("Open Profile", modifier = Modifier.weight(1f)) {
+                            openTikTok(context, user.profileUrl)
+                        }
+                        if (tx?.status == TxStatus.PENDING) {
+                            BrandButton("Waiting…", enabled = false, modifier = Modifier.weight(1.2f)) {}
                         } else {
-                            BrandButton(
-                                "They followed me back  +5",
-                                modifier = Modifier.weight(1.25f),
-                                onClick = { AppState.confirmFollowBack(user) }
-                            )
+                            BrandButton("They followed me back", modifier = Modifier.weight(1.2f)) {
+                                val res = AppState.confirmFollowBack(user)
+                                if (res is com.tiktokboost.app.data.EconomyResult.Failure) {
+                                    onToast(AppState.detailFor(res.reason))
+                                }
+                            }
                         }
                     }
-                    if (pending && tx != null) {
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Report an issue",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = cs.error,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { AppState.dispute(tx) }
-                                .padding(4.dp),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
+                    if (tx?.status == TxStatus.PENDING) {
+                        Spacer(Modifier.height(6.dp))
+                        DisputeInlinePicker(tx = tx)
                     }
                 }
                 else -> {
                     Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
+                        Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Icon(Icons.Filled.CheckCircle, null, tint = GoodGreen, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.CheckCircle, null, tint = GoodGreen, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Exchange complete — +${user.coinReward + MockData.REWARD_FOLLOW_BACK} coins earned",
-                            color = GoodGreen,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
+                            "Exchange complete",
+                            color = GoodGreen, fontWeight = FontWeight.Bold, fontSize = 13.sp
                         )
                     }
                 }
@@ -381,11 +409,43 @@ private fun CreatorCard(user: User, context: Context) {
     }
 }
 
+private fun formatActive(minutesAgo: Int): String = when {
+    minutesAgo <= 5 -> "now"
+    minutesAgo < 60 -> "${minutesAgo}m ago"
+    else -> "${minutesAgo / 60}h ago"
+}
+
+/** Minimal inline dispute flow: tap → pick a reason → dispute submitted. */
 @Composable
-private fun Stat(icon: @Composable () -> Unit, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        icon()
-        Spacer(Modifier.width(4.dp))
-        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun DisputeInlinePicker(tx: com.tiktokboost.app.data.Transaction) {
+    var open by remember { mutableStateOf(false) }
+    Text(
+        "Report an issue",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { open = !open }
+            .padding(4.dp),
+        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+    )
+    if (open) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            MockData.disputeReasons.forEach { reason ->
+                Text(
+                    reason,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            AppState.submitDispute(tx, reason)
+                            open = false
+                        }
+                        .padding(8.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        }
     }
 }

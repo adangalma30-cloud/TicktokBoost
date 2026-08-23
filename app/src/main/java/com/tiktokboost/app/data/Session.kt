@@ -9,9 +9,9 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Lightweight persistence layer backed by SharedPreferences.
- * v0.0.1 data (coins, follows, history) is preserved and transparently
- * migrated into the richer v0.0.2 transaction / notification models.
+ * Persistence layer backed by SharedPreferences. All v0.0.1/v0.0.2 data is
+ * preserved; v0.0.3 adds premium, boosts, streaks, achievements, disputes,
+ * anti-abuse tracking and economy counters on top.
  */
 object Session {
 
@@ -21,6 +21,7 @@ object Session {
     fun init(context: Context) {
         sp = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         migrateV1()
+        migrateV2toV3()
     }
 
     // ---- onboarding / auth -------------------------------------------------
@@ -45,32 +46,65 @@ object Session {
         get() = sp.getString("tiktok_username", "") ?: ""
         set(value) { sp.edit().putString("tiktok_username", value).apply() }
 
-    // ---- coins ---------------------------------------------------------------
+    // v0.0.3 profile fields (feed the profile-completeness score)
+    var bio: String
+        get() = sp.getString("bio", "") ?: ""
+        set(value) { sp.edit().putString("bio", value).apply() }
+
+    var category: String
+        get() = sp.getString("category", "") ?: ""
+        set(value) { sp.edit().putString("category", value).apply() }
+
+    var accountCreated: Long
+        get() = sp.getLong("account_created", 0L)
+        set(value) { sp.edit().putLong("account_created", value).apply() }
+
+    fun accountAgeDays(): Int {
+        if (accountCreated == 0L) return 0
+        return (((System.currentTimeMillis() - accountCreated) / 86_400_000L).toInt()).coerceAtLeast(0)
+    }
+
+    // ---- coins & economy counters ---------------------------------------------
 
     var coins: Int
         get() = sp.getInt("coins", 0)
-        set(value) { sp.edit().putInt("coins", value).apply() }
+        set(value) { sp.edit().putInt("coins", value.coerceAtLeast(0)).apply() }
 
-    /** Coins earned but not yet released (waiting for counterpart confirmation). */
-    var pendingCoins: Int
-        get() = sp.getInt("pending_coins", 0)
-        set(value) { sp.edit().putInt("pending_coins", value).apply() }
+    var lifetimeEarned: Int
+        get() = sp.getInt("lifetime_earned", 0)
+        set(value) { sp.edit().putInt("lifetime_earned", value.coerceAtLeast(0)).apply() }
+
+    var lifetimeSpent: Int
+        get() = sp.getInt("lifetime_spent", 0)
+        set(value) { sp.edit().putInt("lifetime_spent", value.coerceAtLeast(0)).apply() }
+
+    var dailyEarned: Int
+        get() = sp.getInt("daily_earned", 0)
+        set(value) { sp.edit().putInt("daily_earned", value).apply() }
+
+    var dailyEarnDate: String?
+        get() = sp.getString("daily_earned_date", null)
+        set(value) { sp.edit().putString("daily_earned_date", value).apply() }
 
     fun addCoins(n: Int) { coins = coins + n }
-
-    fun addPendingCoins(n: Int) { pendingCoins = pendingCoins + n }
-
-    /** Move coins from pending to available. Returns false if not enough pending. */
-    fun releasePending(n: Int): Boolean {
-        if (pendingCoins < n) return false
-        pendingCoins = pendingCoins - n
-        coins = coins + n
-        return true
-    }
 
     fun spendCoins(n: Int): Boolean {
         if (coins < n) return false
         coins = coins - n
+        return true
+    }
+
+    @Deprecated("pending coins are derived from PENDING transactions in v0.0.3")
+    var pendingCoins: Int
+        get() = sp.getInt("pending_coins", 0)
+        set(value) { sp.edit().putInt("pending_coins", value).apply() }
+
+    fun addPendingCoins(n: Int) { pendingCoins = pendingCoins + n }
+
+    fun releasePending(n: Int): Boolean {
+        if (pendingCoins < n) return false
+        pendingCoins = pendingCoins - n
+        coins = coins + n
         return true
     }
 
@@ -84,21 +118,146 @@ object Session {
         get() = sp.getInt("stat_disputes", 0)
         set(value) { sp.edit().putInt("stat_disputes", value).apply() }
 
-    // ---- follow status: userId -> "followed" | "followed_back" -----------------
+    var suspiciousFlags: Int
+        get() = sp.getInt("suspicious_flags", 0)
+        set(value) { sp.edit().putInt("suspicious_flags", value).apply() }
 
-    private fun followedJson(): JSONObject {
-        val raw = sp.getString("follow_status", "{}") ?: "{}"
-        return try { JSONObject(raw) } catch (e: Exception) { JSONObject() }
+    // ---- premium (mock) ---------------------------------------------------------
+
+    var premiumTier: String?
+        get() = sp.getString("premium_tier", null)
+        set(value) { sp.edit().putString("premium_tier", value).apply() }
+
+    var premiumActivatedAt: Long?
+        get() = if (sp.contains("premium_since")) sp.getLong("premium_since", 0) else null
+        set(value) { if (value == null) sp.edit().remove("premium_since").apply() else sp.edit().putLong("premium_since", value).apply() }
+
+    var premiumExpiresAt: Long?
+        get() = if (sp.contains("premium_until")) sp.getLong("premium_until", 0) else null
+        set(value) { if (value == null) sp.edit().remove("premium_until").apply() else sp.edit().putLong("premium_until", value).apply() }
+
+    var premiumRenewalNotified: Boolean
+        get() = sp.getBoolean("premium_renewal_notified", false)
+        set(value) { sp.edit().putBoolean("premium_renewal_notified", value).apply() }
+
+    // ---- boosts -------------------------------------------------------------------
+
+    var activeBoostTier: String?
+        get() = sp.getString("boost_tier", null)
+        set(value) { sp.edit().putString("boost_tier", value).apply() }
+
+    var activeBoostUntil: Long?
+        get() = if (sp.contains("boost_until")) sp.getLong("boost_until", 0) else null
+        set(value) { if (value == null) sp.edit().remove("boost_until").apply() else sp.edit().putLong("boost_until", value).apply() }
+
+    fun setBoost(tier: String, until: Long) {
+        activeBoostTier = tier
+        activeBoostUntil = until
     }
 
-    private fun saveFollowedJson(obj: JSONObject) {
-        sp.edit().putString("follow_status", obj.toString()).apply()
+    fun clearBoost() {
+        activeBoostTier = null
+        activeBoostUntil = null
     }
+
+    // ---- cooldowns & pairing -------------------------------------------------------
+
+    var cooldownUntil: Long?
+        get() = if (sp.contains("cooldown_until")) sp.getLong("cooldown_until", 0) else null
+        set(value) { if (value == null) sp.edit().remove("cooldown_until").apply() else sp.edit().putLong("cooldown_until", value).apply() }
+
+    private fun partnerJson(): JSONObject =
+        try { JSONObject(sp.getString("partner_history", "{}") ?: "{}") } catch (e: Exception) { JSONObject() }
+
+    fun partnerHistory(userId: String): Long? {
+        val v = partnerJson().optLong(userId, -1L)
+        return if (v <= 0) null else v
+    }
+
+    fun recordPartner(userId: String) {
+        val obj = partnerJson()
+        obj.put(userId, System.currentTimeMillis())
+        sp.edit().putString("partner_history", obj.toString()).apply()
+    }
+
+    // ---- anti-abuse --------------------------------------------------------------------
+
+    var abuseStatus: String
+        get() = sp.getString("abuse_status", AbuseStatus.NORMAL.name) ?: AbuseStatus.NORMAL.name
+        set(value) { sp.edit().putString("abuse_status", value).apply() }
+
+    var restrictedUntil: Long?
+        get() = if (sp.contains("restricted_until")) sp.getLong("restricted_until", 0) else null
+        set(value) { if (value == null) sp.edit().remove("restricted_until").apply() else sp.edit().putLong("restricted_until", value).apply() }
+
+    private fun actionTs(): MutableList<Long> {
+        val raw = sp.getString("action_ts", "[]") ?: "[]"
+        val arr = try { JSONArray(raw) } catch (e: Exception) { JSONArray() }
+        val out = mutableListOf<Long>()
+        for (i in 0 until arr.length()) out.add(arr.optLong(i))
+        return out
+    }
+
+    fun recordActionTimestamp() {
+        val list = actionTs()
+        list.add(System.currentTimeMillis())
+        // keep only recent hour
+        val hourAgo = System.currentTimeMillis() - 3_600_000L
+        val arr = JSONArray()
+        list.filter { it > hourAgo }.forEach { arr.put(it) }
+        sp.edit().putString("action_ts", arr.toString()).apply()
+    }
+
+    fun recentActionCount(windowMs: Long): Int =
+        actionTs().count { it > System.currentTimeMillis() - windowMs }
+
+    fun clearAbuse() {
+        abuseStatus = AbuseStatus.NORMAL.name
+        restrictedUntil = null
+        sp.edit().remove("action_ts").apply()
+    }
+
+    // ---- streaks ---------------------------------------------------------------------------
+
+    var streakDays: Int
+        get() = sp.getInt("streak_days", 0)
+        set(value) { sp.edit().putInt("streak_days", value).apply() }
+
+    var streakBest: Int
+        get() = sp.getInt("streak_best", 0)
+        set(value) { sp.edit().putInt("streak_best", value).apply() }
+
+    var streakLastDay: String?
+        get() = sp.getString("streak_last_day", null)
+        set(value) { sp.edit().putString("streak_last_day", value).apply() }
+
+    // ---- achievements ---------------------------------------------------------------------------
+
+    fun unlockAchievement(id: String): Boolean {
+        val set = (sp.getStringSet("achievements", mutableSetOf()) ?: mutableSetOf()).toMutableSet()
+        if (id in set) return false
+        set.add(id)
+        sp.edit().putStringSet("achievements", set).apply()
+        return true
+    }
+
+    fun isAchievementUnlocked(id: String): Boolean {
+        val set = sp.getStringSet("achievements", mutableSetOf()) ?: mutableSetOf()
+        return id in set
+    }
+
+    fun unlockedAchievements(): List<String> =
+        (sp.getStringSet("achievements", mutableSetOf()) ?: mutableSetOf()).toList()
+
+    // ---- follow status: userId -> "followed" | "followed_back" ----------------------------
+
+    private fun followedJson(): JSONObject =
+        try { JSONObject(sp.getString("follow_status", "{}") ?: "{}") } catch (e: Exception) { JSONObject() }
 
     fun setFollowStatus(userId: String, status: String) {
         val obj = followedJson()
         obj.put(userId, status)
-        saveFollowedJson(obj)
+        sp.edit().putString("follow_status", obj.toString()).apply()
     }
 
     fun followStatus(userId: String): String? {
@@ -106,34 +265,20 @@ object Session {
         return s.ifEmpty { null }
     }
 
-    fun followedCount(): Int {
-        val obj = followedJson()
-        var n = 0
-        val keys = obj.keys()
-        while (keys.hasNext()) { keys.next(); n++ }
-        return n
-    }
+    fun followedCount(): Int = followedJson().length()
 
     fun returnedCount(): Int {
         val obj = followedJson()
         var n = 0
         val keys = obj.keys()
-        while (keys.hasNext()) {
-            if (obj.optString(keys.next()) == "followed_back") n++
-        }
+        while (keys.hasNext()) { if (obj.optString(keys.next()) == "followed_back") n++ }
         return n
     }
 
-    // ---- transactions (v0.0.2) --------------------------------------------------
+    // ---- transactions ---------------------------------------------------------------------------
 
-    private fun txJson(): JSONArray {
-        val raw = sp.getString("transactions", "[]") ?: "[]"
-        return try { JSONArray(raw) } catch (e: Exception) { JSONArray() }
-    }
-
-    private fun saveTxJson(arr: JSONArray) {
-        sp.edit().putString("transactions", arr.toString()).apply()
-    }
+    private fun txJson(): JSONArray =
+        try { JSONArray(sp.getString("transactions", "[]") ?: "[]") } catch (e: Exception) { JSONArray() }
 
     private fun txFromJson(o: JSONObject): Transaction? = try {
         Transaction(
@@ -151,34 +296,31 @@ object Session {
 
     private fun txToJson(t: Transaction): JSONObject {
         val o = JSONObject()
-        o.put("id", t.id)
-        o.put("uid", t.userId ?: "")
-        o.put("username", t.username)
-        o.put("type", t.type.name)
-        o.put("status", t.status.name)
-        o.put("coins", t.coins)
-        o.put("created", t.createdAt)
-        o.put("updated", t.updatedAt)
-        o.put("note", t.note)
+        o.put("id", t.id); o.put("uid", t.userId ?: ""); o.put("username", t.username)
+        o.put("type", t.type.name); o.put("status", t.status.name); o.put("coins", t.coins)
+        o.put("created", t.createdAt); o.put("updated", t.updatedAt); o.put("note", t.note)
         return o
     }
 
     fun addTransaction(tx: Transaction) {
         val arr = txJson()
         arr.put(txToJson(tx))
-        saveTxJson(arr)
+        saveTx(arr)
     }
 
     fun updateTransaction(tx: Transaction) {
         val arr = txJson()
         for (i in 0 until arr.length()) {
-            val o = arr.optJSONObject(i) ?: continue
-            if (o.optString("id") == tx.id) {
+            if (arr.optJSONObject(i)?.optString("id") == tx.id) {
                 arr.put(i, txToJson(tx))
-                saveTxJson(arr)
+                saveTx(arr)
                 return
             }
         }
+    }
+
+    private fun saveTx(arr: JSONArray) {
+        sp.edit().putString("transactions", arr.toString()).apply()
     }
 
     fun transactions(): List<Transaction> {
@@ -190,33 +332,69 @@ object Session {
         return out.sortedByDescending { it.createdAt }
     }
 
-    fun pendingTransactions(): List<Transaction> =
-        transactions().filter { it.status == TxStatus.PENDING }
+    fun pendingTransactions(): List<Transaction> = transactions().filter { it.status == TxStatus.PENDING }
 
-    // ---- notifications (v0.0.2) ---------------------------------------------------
+    // ---- disputes ---------------------------------------------------------------------------
 
-    private fun notifJson(): JSONArray {
-        val raw = sp.getString("notifications", "[]") ?: "[]"
-        return try { JSONArray(raw) } catch (e: Exception) { JSONArray() }
+    private fun disputeJson(): JSONArray =
+        try { JSONArray(sp.getString("disputes", "[]") ?: "[]") } catch (e: Exception) { JSONArray() }
+
+    fun addDispute(d: DisputeRecord) {
+        val arr = disputeJson()
+        val o = JSONObject()
+        o.put("id", d.id); o.put("tx", d.txId); o.put("me", d.initiator)
+        o.put("other", d.counterpart); o.put("created", d.createdAt)
+        o.put("reason", d.reason); o.put("status", d.status.name)
+        arr.put(o)
+        sp.edit().putString("disputes", arr.toString()).apply()
     }
 
-    private fun saveNotifJson(arr: JSONArray) {
-        sp.edit().putString("notifications", arr.toString()).apply()
+    fun updateDispute(d: DisputeRecord) {
+        val arr = disputeJson()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            if (o.optString("id") == d.id) {
+                o.put("status", d.status.name)
+                arr.put(i, o)
+                sp.edit().putString("disputes", arr.toString()).apply()
+                return
+            }
+        }
     }
+
+    fun disputes(): List<DisputeRecord> {
+        val arr = disputeJson()
+        val out = mutableListOf<DisputeRecord>()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            out.add(
+                DisputeRecord(
+                    id = o.optString("id"),
+                    txId = o.optString("tx"),
+                    initiator = o.optString("me"),
+                    counterpart = o.optString("other"),
+                    createdAt = o.optLong("created"),
+                    reason = o.optString("reason"),
+                    status = runCatching { DisputeStatus.valueOf(o.optString("status")) }.getOrDefault(DisputeStatus.OPEN)
+                )
+            )
+        }
+        return out.sortedByDescending { it.createdAt }
+    }
+
+    // ---- notifications ---------------------------------------------------------------------------
+
+    private fun notifJson(): JSONArray =
+        try { JSONArray(sp.getString("notifications", "[]") ?: "[]") } catch (e: Exception) { JSONArray() }
 
     fun addNotification(kind: String, title: String, message: String, timestamp: Long = System.currentTimeMillis()) {
         val arr = notifJson()
         val o = JSONObject()
-        o.put("id", "n_$timestamp")
-        o.put("kind", kind)
-        o.put("title", title)
-        o.put("message", message)
-        o.put("ts", timestamp)
-        o.put("read", false)
+        o.put("id", "n_$timestamp"); o.put("kind", kind); o.put("title", title)
+        o.put("message", message); o.put("ts", timestamp); o.put("read", false)
         arr.put(o)
-        // keep the list bounded
-        while (arr.length() > 40) arr.remove(0)
-        saveNotifJson(arr)
+        while (arr.length() > 50) arr.remove(0)
+        sp.edit().putString("notifications", arr.toString()).apply()
     }
 
     fun notifications(): List<AppNotification> {
@@ -226,12 +404,9 @@ object Session {
             val o = arr.optJSONObject(i) ?: continue
             out.add(
                 AppNotification(
-                    id = o.optString("id"),
-                    kind = o.optString("kind", "system"),
-                    title = o.optString("title"),
-                    message = o.optString("message"),
-                    timestamp = o.optLong("ts"),
-                    read = o.optBoolean("read")
+                    id = o.optString("id"), kind = o.optString("kind", "system"),
+                    title = o.optString("title"), message = o.optString("message"),
+                    timestamp = o.optLong("ts"), read = o.optBoolean("read")
                 )
             )
         }
@@ -247,25 +422,41 @@ object Session {
             o.put("read", true)
             arr.put(i, o)
         }
-        saveNotifJson(arr)
+        sp.edit().putString("notifications", arr.toString()).apply()
     }
 
-    // ---- legacy history (v0.0.1 API kept working) ------------------------------------
+    // ---- discovery freshness ---------------------------------------------------------------------------
 
-    // ---- history (legacy JSON kept in sync) ------------------------------------
-    private fun historyJson(): JSONArray {
-        val raw = sp.getString("history", "[]") ?: "[]"
-        return try { JSONArray(raw) } catch (e: Exception) { JSONArray() }
+    private fun seenJson(): JSONObject =
+        try { JSONObject(sp.getString("seen_history", "{}") ?: "{}") } catch (e: Exception) { JSONObject() }
+
+    fun markSeen(userId: String) {
+        val obj = seenJson()
+        obj.put(userId, System.currentTimeMillis())
+        // prune to 200 entries
+        if (obj.length() > 200) {
+            val keys = obj.keys().asSequence().toList()
+            keys.take(obj.length() - 200).forEach { obj.remove(it) }
+        }
+        sp.edit().putString("seen_history", obj.toString()).apply()
     }
+
+    fun lastSeen(userId: String): Long? {
+        val v = seenJson().optLong(userId, -1L)
+        return if (v <= 0) null else v
+    }
+
+    // ---- legacy history (v0.0.1 API kept working) ---------------------------------------------------------
+
+    private fun historyJson(): JSONArray =
+        try { JSONArray(sp.getString("history", "[]") ?: "[]") } catch (e: Exception) { JSONArray() }
 
     fun addHistory(username: String, action: String, coinsEarned: Int) {
         val arr = historyJson()
         val obj = JSONObject()
         obj.put("id", System.currentTimeMillis().toString())
-        obj.put("username", username)
-        obj.put("action", action)
-        obj.put("coins", coinsEarned)
-        obj.put("ts", System.currentTimeMillis())
+        obj.put("username", username); obj.put("action", action)
+        obj.put("coins", coinsEarned); obj.put("ts", System.currentTimeMillis())
         arr.put(obj)
         sp.edit().putString("history", arr.toString()).apply()
     }
@@ -275,22 +466,27 @@ object Session {
         val out = mutableListOf<FollowEvent>()
         for (i in 0 until arr.length()) {
             val o = arr.optJSONObject(i) ?: continue
-            out.add(
-                FollowEvent(
-                    id = o.optString("id"),
-                    username = o.optString("username"),
-                    action = o.optString("action"),
-                    coinsEarned = o.optInt("coins"),
-                    timestamp = o.optLong("ts")
-                )
-            )
+            out.add(FollowEvent(o.optString("id"), o.optString("username"), o.optString("action"), o.optInt("coins"), o.optLong("ts")))
         }
         return out.sortedByDescending { it.timestamp }
     }
 
-    // ---- daily check-in -----------------------------------------------------------------
+    // ---- daily check-in ----------------------------------------------------------------------------------------
 
     fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+
+    private fun yesterday(): String =
+        SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(System.currentTimeMillis() - 86_400_000L))
+
+    /** Advances the streak if today is a new consecutive day; resets on gap. Returns new streak. */
+    fun advanceStreak(): Int {
+        val last = streakLastDay
+        if (last == today()) return streakDays
+        streakDays = if (last == yesterday()) streakDays + 1 else 1
+        streakLastDay = today()
+        if (streakDays > streakBest) streakBest = streakDays
+        return streakDays
+    }
 
     fun canCheckIn(): Boolean = sp.getString("last_checkin", "") != today()
 
@@ -298,7 +494,7 @@ object Session {
         sp.edit().putString("last_checkin", today()).apply()
     }
 
-    // ---- one-time task claims ---------------------------------------------------------
+    // ---- one-time task claims -----------------------------------------------------------------------------------
 
     fun claimTask(id: String): Boolean {
         val set = (sp.getStringSet("claimed_tasks", mutableSetOf()) ?: mutableSetOf()).toMutableSet()
@@ -313,58 +509,53 @@ object Session {
         return id in set
     }
 
-    // ---- migration & helpers -------------------------------------------------------------
+    // ---- migrations & helpers --------------------------------------------------------------------------------------
 
-    /**
-     * One-time migration: converts v0.0.1 history entries into v0.0.2
-     * transactions (all completed — those coins were already granted) and
-     * counts verified follows as successful exchanges so trust survives.
-     */
     private fun migrateV1() {
         if (sp.getBoolean("v2_migrated", false)) return
         val legacy = history()
-        val now = System.currentTimeMillis()
-        legacy.forEachIndexed { i, ev ->
+        legacy.forEach { ev ->
             val type = when {
-                ev.action.contains("followed you back", ignoreCase = true) -> TxType.FOLLOW_BACK
-                ev.action.contains("followed", ignoreCase = true) -> TxType.FOLLOW
-                ev.action.contains("bonus", ignoreCase = true) -> TxType.BONUS
+                ev.action.contains("followed you back", true) -> TxType.FOLLOW_BACK
+                ev.action.contains("followed", true) -> TxType.FOLLOW
                 else -> TxType.BONUS
             }
-            addTransaction(
-                Transaction(
-                    id = "m_${ev.id}",
-                    username = ev.username,
-                    type = type,
-                    status = TxStatus.COMPLETED,
-                    coins = ev.coinsEarned,
-                    createdAt = ev.timestamp,
-                    updatedAt = ev.timestamp,
-                    note = ev.action
-                )
-            )
+            addTransaction(Transaction("m_${ev.id}", null, ev.username, type, TxStatus.COMPLETED, ev.coinsEarned, ev.timestamp, ev.timestamp, ev.action))
         }
-        // legacy follows that were completed = successful exchanges
         if (legacy.isNotEmpty()) {
-            val follows = legacy.count { it.coinsEarned > 0 && it.action.contains("followed", ignoreCase = true) }
+            val follows = legacy.count { it.coinsEarned > 0 && it.action.contains("followed", true) }
             if (follows > statExchanges) statExchanges = follows
         }
         if (notifications().isEmpty()) {
-            addNotification(
-                "system", "Welcome to TikTokBoost v0.0.2 ✨",
-                "Trust levels, pending coins and notifications are new — check your profile to see your trust badge.",
-                now
-            )
+            addNotification("system", "Welcome to TickTokBoost ✨", "Discover creators, complete exchanges, build trust.")
         }
         sp.edit().putBoolean("v2_migrated", true).apply()
+    }
+
+    /** v0.0.3: seed economy counters from existing data so lifetime stats look right. */
+    private fun migrateV2toV3() {
+        if (sp.getBoolean("v3_migrated", false)) return
+        val txs = transactions()
+        if (lifetimeEarned == 0) lifetimeEarned = txs.filter { it.coins > 0 }.sumOf { it.coins }
+        if (lifetimeSpent == 0) lifetimeSpent = txs.filter { it.coins < 0 }.sumOf { -it.coins }
+        if (accountCreated == 0L) accountCreated = txs.lastOrNull()?.createdAt ?: System.currentTimeMillis()
+        sp.edit().putBoolean("v3_migrated", true).apply()
+    }
+
+    /** Admin/demo reset for testing economy rules without waiting real time. */
+    fun resetEconomyGuards() {
+        cooldownUntil = null
+        sp.edit().remove("partner_history").apply()
+        dailyEarned = 0
+        dailyEarnDate = null
+        clearAbuse()
+        suspiciousFlags = 0
     }
 
     fun clearUser() {
         sp.edit()
             .putBoolean("logged_in", false)
-            .remove("display_name")
-            .remove("email")
-            .remove("tiktok_username")
+            .remove("display_name").remove("email").remove("tiktok_username")
             .apply()
     }
 

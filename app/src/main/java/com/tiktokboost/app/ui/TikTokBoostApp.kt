@@ -20,18 +20,21 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.tiktokboost.app.R
 import com.tiktokboost.app.data.Session
+import com.tiktokboost.app.ui.screens.AdminScreen
+import com.tiktokboost.app.ui.screens.AnalyticsScreen
+import com.tiktokboost.app.ui.screens.BoostScreen
 import com.tiktokboost.app.ui.screens.CoinsScreen
 import com.tiktokboost.app.ui.screens.EarnScreen
 import com.tiktokboost.app.ui.screens.ExchangeScreen
@@ -39,36 +42,47 @@ import com.tiktokboost.app.ui.screens.HistoryScreen
 import com.tiktokboost.app.ui.screens.HomeScreen
 import com.tiktokboost.app.ui.screens.LoginScreen
 import com.tiktokboost.app.ui.screens.NotificationsScreen
+import com.tiktokboost.app.ui.screens.OnboardingScreen
+import com.tiktokboost.app.ui.screens.PremiumScreen
 import com.tiktokboost.app.ui.screens.ProfileScreen
 import com.tiktokboost.app.ui.screens.SettingsScreen
 import com.tiktokboost.app.ui.screens.SignupScreen
 import com.tiktokboost.app.ui.screens.SplashScreen
-import com.tiktokboost.app.ui.screens.WelcomeScreen
 
 object Routes {
     const val SPLASH = "splash"
-    const val WELCOME = "welcome"
+    const val ONBOARDING = "onboarding"
     const val LOGIN = "login"
     const val SIGNUP = "signup"
     const val HOME = "main_home"
-    const val EXCHANGE = "main_exchange"
-    const val COINS = "main_coins"
+    const val DISCOVER = "main_discover"
+    const val EARN = "main_earn"
+    const val BOOST = "main_boost"
     const val PROFILE = "main_profile"
-    const val EARN = "earn"
+    const val COINS = "main_coins"          // kept for deep-links from old entry points
     const val HISTORY = "history"
     const val SETTINGS = "settings"
     const val NOTIFICATIONS = "notifications"
+    const val PREMIUM = "premium"
+    const val ANALYTICS = "analytics"
+    const val ADMIN = "admin"
 
-    val bottomTabs = listOf(HOME, EXCHANGE, COINS, PROFILE)
+    val bottomTabs = listOf(HOME, DISCOVER, EARN, BOOST, PROFILE)
 }
 
-private data class TabDef(val route: String, val label: String, val icon: ImageVector)
+private data class TabDef(
+    val route: String,
+    val label: String,
+    val icon: ImageVector? = null,
+    val drawable: Int? = null
+)
 
 private val tabs = listOf(
-    TabDef(Routes.HOME, "Home", Icons.Filled.Home),
-    TabDef(Routes.EXCHANGE, "Discover", Icons.Filled.Search),
-    TabDef(Routes.COINS, "Coins", Icons.Filled.Star),
-    TabDef(Routes.PROFILE, "Profile", Icons.Filled.Person)
+    TabDef(Routes.HOME, "Home", icon = Icons.Filled.Home),
+    TabDef(Routes.DISCOVER, "Discover", icon = Icons.Filled.Search),
+    TabDef(Routes.EARN, "Earn", icon = Icons.Filled.Star),
+    TabDef(Routes.BOOST, "Boost", drawable = R.drawable.ic_bolt),
+    TabDef(Routes.PROFILE, "Profile", icon = Icons.Filled.Person)
 )
 
 @Composable
@@ -76,7 +90,6 @@ fun TikTokBoostApp() {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-
     val cs = MaterialTheme.colorScheme
 
     Scaffold(
@@ -94,7 +107,13 @@ fun TikTokBoostApp() {
                                     restoreState = true
                                 }
                             },
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
+                            icon = {
+                                if (tab.drawable != null) {
+                                    Icon(painterResource(tab.drawable), contentDescription = tab.label)
+                                } else {
+                                    Icon(tab.icon!!, contentDescription = tab.label)
+                                }
+                            },
                             label = { Text(tab.label, fontSize = 11.sp) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = cs.primary,
@@ -119,76 +138,66 @@ fun TikTokBoostApp() {
             popExitTransition = { fadeOut(tween(200)) + slideOutVertically(tween(260)) { it / 24 } }
         ) {
             composable(Routes.SPLASH) {
-                SplashScreen(
-                    onDone = {
-                        val target = postSplashStart()
-                        navController.navigate(target) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
-                        }
-                    }
-                )
+                SplashScreen(onDone = {
+                    navController.navigate(postSplashStart()) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                })
             }
-            composable(Routes.WELCOME) {
-                WelcomeScreen(
+            composable(Routes.ONBOARDING) {
+                OnboardingScreen(
                     onGetStarted = {
                         Session.isOnboarded = true
-                        navController.navigate(Routes.SIGNUP) {
-                            popUpTo(Routes.WELCOME) { inclusive = true }
-                        }
+                        navController.navigate(Routes.SIGNUP) { popUpTo(Routes.ONBOARDING) { inclusive = true } }
                     },
                     onLogin = {
                         Session.isOnboarded = true
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(Routes.WELCOME) { inclusive = true }
-                        }
+                        navController.navigate(Routes.LOGIN) { popUpTo(Routes.ONBOARDING) { inclusive = true } }
                     }
                 )
             }
             composable(Routes.SIGNUP) {
                 SignupScreen(
-                    onDone = {
-                        navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.SIGNUP) { inclusive = true }
-                        }
-                    },
+                    onDone = { navController.navigate(Routes.HOME) { popUpTo(Routes.SIGNUP) { inclusive = true } } },
                     onBack = { navController.popBackStack() }
                 )
             }
             composable(Routes.LOGIN) {
                 LoginScreen(
-                    onDone = {
-                        navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.LOGIN) { inclusive = true }
-                        }
-                    },
+                    onDone = { navController.navigate(Routes.HOME) { popUpTo(Routes.LOGIN) { inclusive = true } } },
                     onBack = { navController.popBackStack() }
                 )
             }
             composable(Routes.HOME) {
                 HomeScreen(
-                    onOpenExchange = { navController.navigate(Routes.EXCHANGE) },
+                    onOpenDiscover = { navController.navigate(Routes.DISCOVER) },
+                    onOpenBoost = { navController.navigate(Routes.BOOST) },
                     onOpenEarn = { navController.navigate(Routes.EARN) },
                     onOpenHistory = { navController.navigate(Routes.HISTORY) },
                     onOpenNotifications = { navController.navigate(Routes.NOTIFICATIONS) }
                 )
             }
-            composable(Routes.EXCHANGE) {
-                ExchangeScreen()
+            composable(Routes.DISCOVER) {
+                ExchangeScreen(onOpenPremium = { navController.navigate(Routes.PREMIUM) })
             }
-            composable(Routes.COINS) {
-                CoinsScreen(onEarn = { navController.navigate(Routes.EARN) })
+            composable(Routes.EARN) {
+                EarnScreen(onBack = null, showTopBar = false)
+            }
+            composable(Routes.BOOST) {
+                BoostScreen(
+                    onOpenPremium = { navController.navigate(Routes.PREMIUM) },
+                    onOpenAnalytics = { navController.navigate(Routes.ANALYTICS) }
+                )
             }
             composable(Routes.PROFILE) {
                 ProfileScreen(
-                    onSignOut = {
-                        navController.navigate(Routes.WELCOME) { popUpTo(0) { inclusive = true } }
-                    },
+                    onSignOut = { navController.navigate(Routes.ONBOARDING) { popUpTo(0) { inclusive = true } } },
                     onSettings = { navController.navigate(Routes.SETTINGS) },
-                    onHistory = { navController.navigate(Routes.HISTORY) }
+                    onHistory = { navController.navigate(Routes.HISTORY) },
+                    onPremium = { navController.navigate(Routes.PREMIUM) },
+                    onAnalytics = { navController.navigate(Routes.ANALYTICS) }
                 )
             }
-            composable(Routes.EARN) {
-                EarnScreen(onBack = { navController.popBackStack() })
+            composable(Routes.COINS) {
+                CoinsScreen(onEarn = { navController.navigate(Routes.EARN) })
             }
             composable(Routes.HISTORY) {
                 HistoryScreen(onBack = { navController.popBackStack() })
@@ -196,12 +205,24 @@ fun TikTokBoostApp() {
             composable(Routes.NOTIFICATIONS) {
                 NotificationsScreen(onBack = { navController.popBackStack() })
             }
+            composable(Routes.PREMIUM) {
+                PremiumScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.ANALYTICS) {
+                AnalyticsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenPremium = { navController.navigate(Routes.PREMIUM) }
+                )
+            }
+            composable(Routes.ADMIN) {
+                AdminScreen(onBack = { navController.popBackStack() })
+            }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
-                    onSignOut = {
-                        navController.navigate(Routes.WELCOME) { popUpTo(0) { inclusive = true } }
-                    }
+                    onSignOut = { navController.navigate(Routes.ONBOARDING) { popUpTo(0) { inclusive = true } } },
+                    onAdmin = { navController.navigate(Routes.ADMIN) },
+                    onPremium = { navController.navigate(Routes.PREMIUM) }
                 )
             }
         }
@@ -209,7 +230,7 @@ fun TikTokBoostApp() {
 }
 
 private fun postSplashStart(): String = when {
-    !Session.isOnboarded -> Routes.WELCOME
+    !Session.isOnboarded -> Routes.ONBOARDING
     !Session.isLoggedIn -> Routes.LOGIN
     else -> Routes.HOME
 }

@@ -52,13 +52,13 @@ import kotlin.random.Random
  */
 @Composable
 fun SplashScreen(onDone: () -> Unit) {
-    val stage = Color(0xFF0B0E1A)
+    val stage = Color(0xFF0A0A12)
 
     // ---- particle field -------------------------------------------------------
     data class Particle(val x: Float, val y: Float, val r: Float, val speed: Float, val phase: Float, val tint: Color)
     val particles = remember {
         val rnd = Random(7)
-        val tints = listOf(Color(0xFF25F4EE), Color(0xFF4A63F5), Color(0xFFFE2C55), Color.White)
+        val tints = listOf(Color(0xFF25F4EE), Color(0xFFFE2C55), Color.White, Color(0xFF0AA8B5))
         List(26) {
             Particle(
                 x = rnd.nextFloat(),
@@ -130,7 +130,8 @@ fun SplashScreen(onDone: () -> Unit) {
                         .background(
                             Brush.radialGradient(
                                 listOf(
-                                    Color(0xFF4A63F5).copy(alpha = 0.10f + 0.28f * glow),
+                                    Color(0xFF25F4EE).copy(alpha = 0.06f + 0.20f * glow),
+                                    Color(0xFFFE2C55).copy(alpha = 0.05f + 0.16f * glow),
                                     Color.Transparent
                                 )
                             )
@@ -142,7 +143,7 @@ fun SplashScreen(onDone: () -> Unit) {
                         .size(116.dp)
                         .scale(logoScale.value)
                         .graphicsLayer { alpha = logoAlpha.value }
-                        .background(Color(0xFF121730)),
+                        .background(Color(0xFF12121D)),
                     contentAlignment = Alignment.Center
                 ) {
                     LogoMark(size = 104.dp)

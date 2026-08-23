@@ -165,6 +165,7 @@ fun CoinsScreen(onEarn: () -> Unit) {
                                         TxType.FOLLOW_BACK -> "Follow back · @${tx.username}"
                                         TxType.PURCHASE -> tx.note.ifBlank { "Purchase" }
                                         TxType.BONUS -> tx.note.ifBlank { "Bonus" }
+                                        else -> tx.note.ifBlank { tx.type.name.lowercase() }
                                     },
                                     style = MaterialTheme.typography.titleSmall,
                                     color = cs.onSurface,
@@ -202,7 +203,8 @@ fun CoinsScreen(onEarn: () -> Unit) {
             desc = "Pin your profile to the top of Discovery",
             price = 50,
             onBuy = {
-                msg = if (AppState.spendCoins(50, "Featured slot — 24h")) "You're featured for 24 hours! 🎉"
+                val res = com.tiktokboost.app.data.EconomyService.spend("Featured slot — 24h", 50, com.tiktokboost.app.data.TxType.BOOST)
+                msg = if (res is com.tiktokboost.app.data.EconomyResult.Success) "You're featured for 24 hours! 🎉"
                 else "Not enough coins — earn more!"
             }
         )
@@ -213,7 +215,8 @@ fun CoinsScreen(onEarn: () -> Unit) {
             desc = "Show above regular creators",
             price = 30,
             onBuy = {
-                msg = if (AppState.spendCoins(30, "Priority listing — 24h")) "You're now in priority listing! 🚀"
+                val res = com.tiktokboost.app.data.EconomyService.spend("Priority listing — 24h", 30, com.tiktokboost.app.data.TxType.BOOST)
+                msg = if (res is com.tiktokboost.app.data.EconomyResult.Success) "You're now in priority listing! 🚀"
                 else "Not enough coins — earn more!"
             }
         )

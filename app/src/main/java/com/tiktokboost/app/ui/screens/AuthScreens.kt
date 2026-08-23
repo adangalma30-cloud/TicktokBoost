@@ -182,10 +182,10 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
                     Session.email = email.trim()
                     Session.tiktokUsername = handle
                     Session.isLoggedIn = true
-                    AppState.welcomeBonus(handle)
+                    AppState.starterBonus(handle)
                     Session.addNotification(
-                        "coins", "Welcome bonus: ${MockData.WELCOME_BONUS} coins.",
-                        "Thanks for joining TickTokBoost — here's ${MockData.WELCOME_BONUS} coins to get you started."
+                        "coins", "Starter coins: ${com.tiktokboost.app.data.EconomyConfig.STARTER_COINS}.",
+                        "Thanks for joining TickTokBoost — here are ${com.tiktokboost.app.data.EconomyConfig.STARTER_COINS} starter coins."
                     )
                     AppState.refresh()
                     onDone()
@@ -193,7 +193,7 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                "You'll get a ${MockData.WELCOME_BONUS} coin welcome bonus 🎉",
+                "You'll start with ${com.tiktokboost.app.data.EconomyConfig.STARTER_COINS} starter coins 🎉",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
