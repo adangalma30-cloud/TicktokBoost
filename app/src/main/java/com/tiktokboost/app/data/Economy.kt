@@ -139,8 +139,8 @@ object EconomyService {
     }
 
     // ── earning: coins land only after confirmation ──────────────────────
-    fun grantConfirmed(username: String, userId: String?, reason: String): EconomyResult {
-        if (hasDuplicate(TxType.FOLLOW, username, minutes = 2)) return EconomyResult.Failure(FailureReason.DUPLICATE)
+    fun grantConfirmed(username: String, userId: String?, reason: String, excludeTxId: String? = null): EconomyResult {
+        if (hasDuplicate(TxType.FOLLOW, username, minutes = 2, excludeTxId = excludeTxId)) return EconomyResult.Failure(FailureReason.DUPLICATE)
         val amount = EconomyConfig.COINS_PER_CONFIRMED_EXCHANGE
         val room = dailyRemaining()
         if (room <= 0) {
@@ -204,7 +204,8 @@ object EconomyService {
         val updated = tx.copy(status = TxStatus.VERIFIED, updatedAt = System.currentTimeMillis())
         Session.updateTransaction(updated)
         Session.statExchanges += 1
-        return grantConfirmed(tx.username, tx.userId, "Confirmed exchange with @${tx.username}")
+        // exclude the transaction being confirmed — it must not match itself
+        return grantConfirmed(tx.username, tx.userId, "Confirmed exchange with @${tx.username}", excludeTxId = tx.id)
     }
 
     /** Resolve a disputed exchange without releasing coins (admin deny path). */
@@ -355,10 +356,11 @@ object EconomyService {
         )
     }
 
-    private fun hasDuplicate(type: TxType, username: String, minutes: Int): Boolean {
+    private fun hasDuplicate(type: TxType, username: String, minutes: Int, excludeTxId: String? = null): Boolean {
         val window = minutes * 60_000L
         return Session.transactions().any {
-            it.type == type && it.username == username &&
+            it.id != excludeTxId &&
+                it.type == type && it.username == username &&
                 (it.status == TxStatus.VERIFIED || it.status == TxStatus.PENDING) &&
                 it.createdAt > System.currentTimeMillis() - window
         }

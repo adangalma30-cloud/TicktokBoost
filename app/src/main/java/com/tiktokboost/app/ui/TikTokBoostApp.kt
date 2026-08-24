@@ -44,6 +44,7 @@ import com.tiktokboost.app.ui.screens.LoginScreen
 import com.tiktokboost.app.ui.screens.NotificationsScreen
 import com.tiktokboost.app.ui.screens.OnboardingScreen
 import com.tiktokboost.app.ui.screens.PremiumScreen
+import com.tiktokboost.app.ui.screens.ReferralScreen
 import com.tiktokboost.app.ui.screens.ProfileScreen
 import com.tiktokboost.app.ui.screens.SettingsScreen
 import com.tiktokboost.app.ui.screens.SignupScreen
@@ -66,6 +67,7 @@ object Routes {
     const val PREMIUM = "premium"
     const val ANALYTICS = "analytics"
     const val ADMIN = "admin"
+    const val REFERRAL = "referral"
 
     val bottomTabs = listOf(HOME, DISCOVER, EARN, BOOST, PROFILE)
 }
@@ -179,7 +181,12 @@ fun TikTokBoostApp() {
                 ExchangeScreen(onOpenPremium = { navController.navigate(Routes.PREMIUM) })
             }
             composable(Routes.EARN) {
-                EarnScreen(onBack = null, showTopBar = false)
+                EarnScreen(
+                    onBack = null, showTopBar = false,
+                    onOpenDiscover = { navController.navigate(Routes.DISCOVER) },
+                    onOpenProfile = { navController.navigate(Routes.PROFILE) },
+                    onOpenReferral = { navController.navigate(Routes.REFERRAL) }
+                )
             }
             composable(Routes.BOOST) {
                 BoostScreen(
@@ -216,6 +223,9 @@ fun TikTokBoostApp() {
             }
             composable(Routes.ADMIN) {
                 AdminScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.REFERRAL) {
+                ReferralScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(

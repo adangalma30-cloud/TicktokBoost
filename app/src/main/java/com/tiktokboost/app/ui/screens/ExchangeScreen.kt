@@ -253,36 +253,42 @@ private fun CreatorCard(user: User, context: Context, onToast: (String) -> Unit)
         Column(Modifier.padding(Dimens.card)) {
 
             // ── identity ─────────────────────────────────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.Top) {
                 GradientAvatar(user.displayName, user.hueSeed, 52.dp)
                 Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            user.displayName,
-                            style = MaterialTheme.typography.titleMedium, color = cs.onSurface,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        PremiumBadge(tier = user.premium, compact = true)
-                        Spacer(Modifier.width(5.dp))
-                        Text(user.country, fontSize = 12.sp)
-                    }
-                    Text("@${user.username}", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+                // text block takes remaining width only — long names wrap, never stretch the card
+                Column(Modifier.weight(1f, fill = true)) {
+                    Text(
+                        user.displayName,
+                        style = MaterialTheme.typography.titleMedium, color = cs.onSurface,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        "@${user.username} · ${user.country}",
+                        style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    // compact horizontal status badges on their own line — never overlap the name
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             user.category,
                             style = MaterialTheme.typography.labelSmall,
                             color = cs.primary, fontWeight = FontWeight.Bold
                         )
-                        Spacer(Modifier.width(6.dp))
                         Text(
-                            "· active ${formatActive(user.lastActiveMinutesAgo)}",
+                            " · active ${formatActive(user.lastActiveMinutesAgo)}",
                             style = MaterialTheme.typography.labelSmall,
                             color = cs.onSurfaceVariant
                         )
+                        if (user.premium != PremiumTier.FREE) {
+                            Spacer(Modifier.width(6.dp))
+                            PremiumBadge(tier = user.premium, compact = true)
+                        }
                     }
                 }
+                Spacer(Modifier.width(8.dp))
                 TrustBadge(level = user.trustLevel)
             }
 

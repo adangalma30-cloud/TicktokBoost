@@ -24,10 +24,29 @@ with points and featured placement.
 | `main` | original baseline — kept untouched | baseline |
 | `0.0.1` | Android app MVP (demo/mock data) + built APK | previous |
 | `0.0.2` | Polish release: icon, splash, trust system, transactions, notifications, dark/light | previous |
-| `0.0.3` | Economy hardening, anti-abuse, disputes, Premium (mock), admin dashboard, TikTok-inspired identity | current |
+| `0.0.3` | Economy hardening, anti-abuse, disputes, Premium (mock), admin dashboard, TikTok-inspired identity | previous |
+| `0.0.4` | Stability: duplicate-ID crash fixed (Notifications/History), quest engine, ligature-safe typography, long-name cards | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v0.0.4 (stability release)
+
+- **Fixed the launch/Notifications crash**: notification & transaction IDs were built from
+  millisecond timestamps; same-millisecond bursts (e.g. "confirmed + coins released")
+  collided, producing duplicate LazyColumn keys and an immediate crash that persisted in
+  storage. IDs are now collision-proof and stored lists are deduped on read, which also
+  heals already-affected installs.
+- **Fixed confirmed exchanges not releasing coins**: the anti-duplicate check matched the
+  transaction being confirmed, so some verifications granted nothing.
+- Quest engine: quests track real qualifying actions (check-in, exchanges x3, profile
+  completion, referral qualification, native share) with AVAILABLE / IN_PROGRESS /
+  READY_TO_CLAIM / COMPLETED states; rewards pay exactly once via the economy service.
+- Native Android share sheet for referrals & the share quest; referral code + link screen.
+- Ligature-safe typography (`liga/clig/dlig` disabled app-wide) for clean "in/ij/nj/'n" rendering.
+- Creator cards: long names wrap to two lines with ellipsis, badges never overlap or stretch.
+- Robolectric stability harness (9 tests): real MainActivity launch, poisoned-storage
+  rendering, all tabs, John/Sarah economy flow, quest reward security.
 
 ## What's new in v0.0.3
 
