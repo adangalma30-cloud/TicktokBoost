@@ -76,11 +76,14 @@ fun ProfileScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 GradientAvatar(AppState.displayName.ifBlank { "T" }, 0, 68.dp)
                 Spacer(Modifier.width(14.dp))
-                Column {
+                Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             AppState.displayName.ifBlank { "Creator" },
-                            style = MaterialTheme.typography.headlineSmall, color = cs.onSurface
+                            style = MaterialTheme.typography.headlineSmall, color = cs.onSurface,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(Modifier.width(6.dp))
                         PremiumBadge(tier = AppState.premium, compact = true)

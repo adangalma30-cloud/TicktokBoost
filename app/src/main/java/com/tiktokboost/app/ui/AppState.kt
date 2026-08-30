@@ -373,6 +373,10 @@ object AppState {
 
     fun canCheckIn(): Boolean = Session.canCheckIn()
 
+    /** Central-economy grant used by the quest engine (single path for quest rewards). */
+    fun economyGrant(reason: String, amount: Int): EconomyResult =
+        EconomyService.grantSmall(reason, TxType.ACHIEVEMENT, amount, reason)
+
     fun claimTask(id: String, reward: Int, title: String): EconomyResult {
         if (!Session.claimTask(id)) return EconomyResult.Failure(FailureReason.DUPLICATE, "Already claimed.")
         val res = EconomyService.grantSmall(title, TxType.BONUS, reward, "Earned: $title")

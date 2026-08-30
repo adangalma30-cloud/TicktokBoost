@@ -304,7 +304,17 @@ object Session {
 
     fun addTransaction(tx: Transaction) {
         val arr = txJson()
-        arr.put(txToJson(tx))
+        val o = txToJson(tx)
+        // ensure id uniqueness even under same-millisecond bursts
+        val taken = HashSet<String>(arr.length())
+        for (i in 0 until arr.length()) {
+            arr.optJSONObject(i)?.optString("id")?.let { taken.add(it) }
+        }
+        var id = tx.id
+        var n = 2
+        while (id in taken) { id = "${'$'}{tx.id}_$n"; n++ }
+        o.put("id", id)
+        arr.put(o)
         saveTx(arr)
     }
 
@@ -329,7 +339,8 @@ object Session {
         for (i in 0 until arr.length()) {
             txFromJson(arr.optJSONObject(i) ?: continue)?.let { out.add(it) }
         }
-        return out.sortedByDescending { it.createdAt }
+        val seen = HashSet<String>()
+        return out.sortedByDescending { it.createdAt }.filter { seen.add(it.id) }
     }
 
     fun pendingTransactions(): List<Transaction> = transactions().filter { it.status == TxStatus.PENDING }
@@ -389,8 +400,17 @@ object Session {
 
     fun addNotification(kind: String, title: String, message: String, timestamp: Long = System.currentTimeMillis()) {
         val arr = notifJson()
+        // collision-proof id: same-millisecond notifications would otherwise
+        // produce duplicate LazyColumn keys and crash the Notifications screen
+        var id = "n_$timestamp"
+        val taken = HashSet<String>(arr.length())
+        for (i in 0 until arr.length()) {
+            arr.optJSONObject(i)?.optString("id")?.let { taken.add(it) }
+        }
+        var n = 2
+        while (id in taken) { id = "n_${timestamp}_$n"; n++ }
         val o = JSONObject()
-        o.put("id", "n_$timestamp"); o.put("kind", kind); o.put("title", title)
+        o.put("id", id); o.put("kind", kind); o.put("title", title)
         o.put("message", message); o.put("ts", timestamp); o.put("read", false)
         arr.put(o)
         while (arr.length() > 50) arr.remove(0)
@@ -410,7 +430,8 @@ object Session {
                 )
             )
         }
-        return out.sortedByDescending { it.timestamp }
+        val seen = HashSet<String>()
+        return out.sortedByDescending { it.timestamp }.filter { seen.add(it.id) }
     }
 
     fun unreadNotificationCount(): Int = notifications().count { !it.read }
@@ -493,6 +514,33 @@ object Session {
     fun doCheckIn() {
         sp.edit().putString("last_checkin", today()).apply()
     }
+
+    // ---- quests (v0.0.4) -----------------------------------------------------------------------------------------
+
+    private const val QUESTS_KEY = "quest_states"
+
+    fun questStatesJson(): String = sp.getString(QUESTS_KEY, "{}") ?: "{}"
+
+    fun saveQuestStatesJson(raw: String) {
+        sp.edit().putString(QUESTS_KEY, raw).apply()
+    }
+
+    var sharedAppOnce: Boolean
+        get() = sp.getBoolean("shared_app_once", false)
+        set(value) { sp.edit().putBoolean("shared_app_once", value).apply() }
+
+    var referralQualified: Boolean
+        get() = sp.getBoolean("referral_qualified", false)
+        set(value) { sp.edit().putBoolean("referral_qualified", value).apply() }
+
+    /** Stable demo referral code derived from the handle. */
+    fun referralCode(): String {
+        val h = tiktokUsername.ifBlank { "creator" }
+        val suffix = ((h.hashCode() % 9000) + 9000) % 9000 + 1000
+        return h.uppercase(Locale.US).take(4).padEnd(4, 'X') + suffix
+    }
+
+    fun referralLink(): String = "https://ticktokboost.app/r/${referralCode()}"
 
     // ---- one-time task claims -----------------------------------------------------------------------------------
 

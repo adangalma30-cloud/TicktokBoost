@@ -99,8 +99,6 @@ fun HomeScreen(
             LogoMark(size = 28.dp)
             Spacer(Modifier.width(8.dp))
             Text("TickTokBoost", style = MaterialTheme.typography.titleLarge, color = cs.onBackground)
-            Spacer(Modifier.width(8.dp))
-            PremiumBadge(tier = AppState.premium, compact = true)
             Spacer(Modifier.weight(1f))
             StreakChip(days = AppState.streakDays)
             Spacer(Modifier.width(6.dp))

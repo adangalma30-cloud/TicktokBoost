@@ -1,6 +1,9 @@
 package com.tiktokboost.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import com.tiktokboost.app.R
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -9,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.sp
 
 private val DarkScheme = darkColorScheme(
@@ -65,19 +69,33 @@ private val LightScheme = lightColorScheme(
     onErrorContainer = Color(0xFF8E1037)
 )
 
+private const val NO_LIGATURES = "liga off, clig off, dlig off"
+
+/**
+ * Bundled Roboto — the app renders identically on every device, regardless of
+ * manufacturer system fonts (HiOS/XOS/One UI custom fonts caused the distorted
+ * "in / ij / nj / 'n" rendering). Clean, Android-native, always readable.
+ */
+val AppFont = FontFamily(
+    Font(R.font.roboto_regular, FontWeight.Normal),
+    Font(R.font.roboto_medium, FontWeight.Medium),
+    Font(R.font.roboto_bold, FontWeight.Bold),
+    Font(R.font.roboto_black, FontWeight.ExtraBold)
+)
+
 val BoostTypography = Typography(
-    displaySmall = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp),
-    headlineMedium = TextStyle(fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.3).sp),
-    headlineSmall = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
-    titleLarge = TextStyle(fontSize = 19.sp, lineHeight = 26.sp, fontWeight = FontWeight.Bold),
-    titleMedium = TextStyle(fontSize = 16.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold),
-    titleSmall = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
-    bodyLarge = TextStyle(fontSize = 15.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal),
-    bodyMedium = TextStyle(fontSize = 13.sp, lineHeight = 19.sp, fontWeight = FontWeight.Normal),
-    bodySmall = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Normal),
-    labelLarge = TextStyle(fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.1.sp),
-    labelMedium = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.2.sp),
-    labelSmall = TextStyle(fontSize = 10.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.3.sp)
+    displaySmall = TextStyle(fontFamily = AppFont, fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp, fontFeatureSettings = NO_LIGATURES),
+    headlineMedium = TextStyle(fontFamily = AppFont, fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.3).sp, fontFeatureSettings = NO_LIGATURES),
+    headlineSmall = TextStyle(fontFamily = AppFont, fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold, fontFeatureSettings = NO_LIGATURES),
+    titleLarge = TextStyle(fontFamily = AppFont, fontSize = 19.sp, lineHeight = 26.sp, fontWeight = FontWeight.Bold, fontFeatureSettings = NO_LIGATURES),
+    titleMedium = TextStyle(fontFamily = AppFont, fontSize = 16.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = NO_LIGATURES),
+    titleSmall = TextStyle(fontFamily = AppFont, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = NO_LIGATURES),
+    bodyLarge = TextStyle(fontFamily = AppFont, fontSize = 15.sp, lineHeight = 22.sp, fontFeatureSettings = NO_LIGATURES),
+    bodyMedium = TextStyle(fontFamily = AppFont, fontSize = 13.sp, lineHeight = 19.sp, fontFeatureSettings = NO_LIGATURES),
+    bodySmall = TextStyle(fontFamily = AppFont, fontSize = 11.sp, lineHeight = 16.sp, fontFeatureSettings = NO_LIGATURES),
+    labelLarge = TextStyle(fontFamily = AppFont, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.1.sp, fontFeatureSettings = NO_LIGATURES),
+    labelMedium = TextStyle(fontFamily = AppFont, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.2.sp, fontFeatureSettings = NO_LIGATURES),
+    labelSmall = TextStyle(fontFamily = AppFont, fontSize = 10.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.3.sp, fontFeatureSettings = NO_LIGATURES)
 )
 
 @Composable

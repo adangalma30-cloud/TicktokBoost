@@ -252,39 +252,42 @@ private fun CreatorCard(user: User, context: Context, onToast: (String) -> Unit)
     BrandCard {
         Column(Modifier.padding(Dimens.card)) {
 
-            // ── identity ─────────────────────────────────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // ── identity: avatar | name/username; badges flow on their OWN row ──
+            Row(verticalAlignment = Alignment.Top) {
                 GradientAvatar(user.displayName, user.hueSeed, 52.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            user.displayName,
-                            style = MaterialTheme.typography.titleMedium, color = cs.onSurface,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(Modifier.width(6.dp))
+                    Text(
+                        user.displayName,
+                        style = MaterialTheme.typography.titleMedium, color = cs.onSurface,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        "@${user.username} · ${user.country}",
+                        style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(5.dp))
+                    // trust + premium badges: full-width row, never squeezed, never vertical
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        TrustBadge(level = user.trustLevel)
                         PremiumBadge(tier = user.premium, compact = true)
-                        Spacer(Modifier.width(5.dp))
-                        Text(user.country, fontSize = 12.sp)
-                    }
-                    Text("@${user.username}", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            user.category,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = cs.primary, fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            "· active ${formatActive(user.lastActiveMinutesAgo)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = cs.onSurfaceVariant
-                        )
                     }
                 }
-                TrustBadge(level = user.trustLevel)
             }
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "${user.category} · active ${formatActive(user.lastActiveMinutesAgo)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = cs.primary,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
 
             Spacer(Modifier.height(8.dp))
             Text(

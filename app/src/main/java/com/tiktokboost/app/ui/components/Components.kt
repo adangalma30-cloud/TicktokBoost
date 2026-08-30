@@ -449,7 +449,9 @@ fun TrustBadge(level: Int, modifier: Modifier = Modifier, animate: Boolean = fal
             "L$level · ${tier.name}",
             color = color,
             fontWeight = FontWeight.Bold,
-            fontSize = 11.sp
+            fontSize = 11.sp,
+            maxLines = 1,
+            softWrap = false
         )
     }
 }
@@ -810,20 +812,30 @@ fun PremiumBadge(tier: PremiumTier, modifier: Modifier = Modifier, compact: Bool
     val label = if (tier == PremiumTier.PRO) "Pro" else "Premium"
     val emoji = if (tier == PremiumTier.PRO) "👑" else "💎"
     val brush = Brush.horizontalGradient(listOf(SigGradientStart, SigGradientEnd))
+    // FIXED height + single-line, no-wrap texts: this badge can NEVER collapse
+    // into a vertical strip, no matter how tight the parent layout gets.
     Row(
         modifier
+            .height(if (compact) 20.dp else 24.dp)
             .clip(RoundedCornerShape(50))
             .background(brush)
-            .padding(horizontal = if (compact) 7.dp else 10.dp, vertical = 4.dp),
+            .padding(horizontal = if (compact) 7.dp else 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(emoji, fontSize = if (compact) 10.sp else 12.sp)
+        Text(
+            emoji,
+            fontSize = if (compact) 10.sp else 12.sp,
+            maxLines = 1,
+            softWrap = false
+        )
         Spacer(Modifier.width(4.dp))
         Text(
             label,
             color = Color.White,
             fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 10.sp else 11.sp
+            fontSize = if (compact) 10.sp else 11.sp,
+            maxLines = 1,
+            softWrap = false
         )
     }
 }
@@ -880,10 +892,12 @@ fun ProfileCompletionBar(percent: Int, modifier: Modifier = Modifier) {
             )
             if (percent < 100) {
                 Text(
-                    "Finish it →",
+                    "Complete profile",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }

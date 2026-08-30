@@ -77,8 +77,26 @@ object MockData {
             category = "Education", premium = PremiumTier.PREMIUM, lastActiveMinutesAgo = 2, profileCompleteness = 100),
         User("u18", "kicks.kofi", "Kofi Kicks", "Football boots reviews & freestyle 🥾", "https://www.tiktok.com/@kicks.kofi", 4900, 300, 8, "\uD83C\uDDFC\uD83C\uDDEC", "Football",
             trustLevel = 1, trustScore = 43, successfulExchanges = 1, disputes = 0, completionRate = 100,
-            joinedDaysAgo = 5, activityScore = 44, category = "Football", lastActiveMinutesAgo = 18, profileCompleteness = 50)
+            joinedDaysAgo = 5, activityScore = 44, category = "Football", lastActiveMinutesAgo = 18, profileCompleteness = 50),
+        // ── edge-case fixtures: extreme lengths + ligature-heavy text ──
+        User(
+            "u19", "alexandrina.michele.creates",
+            "Alexandrina-Michele Nnamdinjijeochema Ogbonnayeluvc",
+            bio2(),
+            "https://www.tiktok.com/@alexandrina.michele.creates", 3300, 250, 8,
+            "\uD83C\uDDE8\uD83C\uDDF2", "Fashion",
+            trustLevel = 2, trustScore = 60, successfulExchanges = 4, disputes = 0,
+            completionRate = 93, joinedDaysAgo = 20, activityScore = 50,
+            category = "Fashion", premium = PremiumTier.PREMIUM,
+            lastActiveMinutesAgo = 26, profileCompleteness = 70
+        ),
+        User("u20", "zj", "Zj", "in ij nj 'n — min jingle pins", "https://www.tiktok.com/@zj", 800, 100, 3,
+            "\uD83C\uDDF5\uD83C\uDDF1", "Gaming",
+            trustLevel = 1, trustScore = 42, successfulExchanges = 0, disputes = 0, completionRate = 100,
+            joinedDaysAgo = 2, activityScore = 38, category = "Gaming", lastActiveMinutesAgo = 4, profileCompleteness = 40)
     )
+
+    private fun bio2() = "Finding joy in joining niche jams 'n rocking every single one — invitations inbox always open, come on in! ✨"
 
     val filters = listOf("Recommended", "New", "Trusted", "Most Active")
 

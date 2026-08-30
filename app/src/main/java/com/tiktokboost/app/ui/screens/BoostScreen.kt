@@ -143,7 +143,12 @@ fun BoostScreen(onOpenPremium: () -> Unit, onOpenAnalytics: () -> Unit) {
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Advanced analytics", style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
+                        Text(
+                            "Advanced analytics",
+                            style = MaterialTheme.typography.titleSmall, color = cs.onSurface,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
                         Spacer(Modifier.width(6.dp))
                         PremiumBadge(tier = PremiumTier.PREMIUM, compact = true)
                     }
