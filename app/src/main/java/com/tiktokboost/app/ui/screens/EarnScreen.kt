@@ -8,6 +8,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -167,16 +169,25 @@ fun EarnScreen(
                 Spacer(Modifier.height(10.dp))
             }
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(10.dp))
             BrandCard {
-                Text("💡 How earning works", style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Confirmed exchanges pay ${EconomyConfig.COINS_PER_CONFIRMED_EXCHANGE} coins each. Daily cap: " +
-                        "${EconomyConfig.DAILY_EARNING_CAP}. Cooldown: ${EconomyConfig.EXCHANGE_COOLDOWN_MINUTES} min " +
-                        "(shorter as trust grows). Quest rewards require real qualifying actions — opening a quest never pays.",
-                    style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant
-                )
+                Column(Modifier.padding(Dimens.card)) {
+                    Text("Coin Earning Rules", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+                    Spacer(Modifier.height(8.dp))
+                    listOf(
+                        "Confirmed exchanges earn ${EconomyConfig.COINS_PER_CONFIRMED_EXCHANGE} coins each.",
+                        "Daily earning cap: ${EconomyConfig.DAILY_EARNING_CAP} coins.",
+                        "Exchange cooldown: ${EconomyConfig.EXCHANGE_COOLDOWN_MINUTES} minutes.",
+                        "Cooldown may decrease as trust improves.",
+                        "Quest rewards require real qualifying actions.",
+                        "Opening a quest does NOT automatically award coins."
+                    ).forEach { rule ->
+                        Row(Modifier.padding(vertical = 2.dp)) {
+                            Text("•  ", color = cs.primary, fontWeight = FontWeight.Bold)
+                            Text(rule, style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+                        }
+                    }
+                }
             }
 
             Spacer(Modifier.height(24.dp))
@@ -251,44 +262,99 @@ private fun QuestCard(
         QuestType.INVITE_FRIEND -> "🎁"
         QuestType.SHARE_APP -> "📤"
     }
+    val statusLine = when (def.type) {
+        QuestType.DAILY_CHECKIN -> "Streak: ${AppState.streakDays} day${if (AppState.streakDays == 1) "" else "s"}"
+        QuestType.FOLLOW_CREATORS -> "Progress: ${state.progress} / ${def.requirement}"
+        QuestType.COMPLETE_PROFILE -> "Profile: ${state.progress}%"
+        QuestType.INVITE_FRIEND -> if (state.progress >= 1) "Friend joined — claim ready" else "Waiting for a friend to join"
+        QuestType.SHARE_APP -> if (state.progress >= 1) "Shared — claim ready" else "Not shared yet"
+    }
     BrandCard {
         Column(Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(emoji, fontSize = 22.sp)
+            // header: emoji | title + description | reward chip (all wrap naturally, no width fight)
+            Row(verticalAlignment = Alignment.Top) {
+                // fixed-width icon slot: emoji glyph metrics can never distort this row
+                Box(
+                    Modifier.width(30.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(emoji, fontSize = 20.sp, maxLines = 1, softWrap = false)
+                }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(def.title, style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
-                    Text(def.description, style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        def.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = cs.onSurfaceVariant
+                    )
                 }
-                when (state.status) {
-                    QuestStatus.COMPLETED -> {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("✓", color = cs.primary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Text("Completed", style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
-                        }
-                    }
-                    QuestStatus.READY_TO_CLAIM -> {
-                        BrandButton("Claim +${def.reward}", onClick = onClaim)
-                    }
-                    else -> {
-                        SecondaryButton(def.action, onClick = onAction)
-                    }
+                Spacer(Modifier.width(10.dp))
+                // compact reward chip: 🪙 +N
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(cs.surfaceVariant)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    CoinIcon(size = 12.dp)
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "+${def.reward}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = cs.primary, fontWeight = FontWeight.Bold,
+                        maxLines = 1, softWrap = false
+                    )
                 }
             }
+
+            // status / progress line
+            Spacer(Modifier.height(8.dp))
+            Text(
+                statusLine,
+                style = MaterialTheme.typography.labelMedium,
+                color = cs.onSurfaceVariant
+            )
             if (state.status == QuestStatus.IN_PROGRESS) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "${state.progress} / ${def.requirement}" + if (def.type == QuestType.COMPLETE_PROFILE) "% complete" else "",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = cs.onSurfaceVariant
-                )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(5.dp))
                 LinearProgressIndicator(
                     progress = { (state.progress.toFloat() / def.requirement).coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(3.dp)),
                     color = cs.primary, trackColor = cs.surfaceVariant
                 )
             }
+
+            // action row: full-width button ALONE on its own row — can never squeeze the text above
+            Spacer(Modifier.height(10.dp))
+            when (state.status) {
+                QuestStatus.COMPLETED -> {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("✓", color = cs.primary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Completed",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = cs.primary, fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                QuestStatus.READY_TO_CLAIM -> {
+                    BrandButton("Claim +${def.reward}", modifier = Modifier.fillMaxWidth(), onClick = onClaim)
+                }
+                QuestStatus.IN_PROGRESS -> {
+                    SecondaryButton("Continue", modifier = Modifier.fillMaxWidth(), onClick = onAction)
+                }
+                QuestStatus.AVAILABLE -> {
+                    SecondaryButton(def.action, modifier = Modifier.fillMaxWidth(), onClick = onAction)
+                }
+            }
         }
     }
 }
+

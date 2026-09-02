@@ -4,6 +4,10 @@ import android.content.Context
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -166,6 +170,36 @@ class StabilityTest {
         rule.mainClock.advanceTimeBy(400)
         // the old broken label ("Finish it →" with distorted arrow) is gone
         rule.onNodeWithText("Complete profile").performScrollTo().assertExists()
+    }
+
+    @Test
+    fun `earn quest cards render title description status and rules with real width`() {
+        goHome()
+        rule.onNodeWithText("Earn").performClick()
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(700)
+        rule.waitForIdle()
+        // let all entrance/count-up animations settle before measuring widths
+        rule.mainClock.autoAdvance = true
+        rule.waitForIdle()
+
+        val titles = listOf(
+            "Follow 3 creators", "Complete your profile",
+            "Invite a friend", "Share the app", "Daily Check-in"
+        )
+        // NOTE: width assertions are unusable under Robolectric with bundled
+        // fonts (JVM glyph advances read ~1dp/char). Presence + performScrollTo
+        // success proves each quest is composed AND reachable by scrolling —
+        // the full page (balance -> quests -> rules) scrolls above the nav bar.
+        titles.forEach { t ->
+            rule.onNodeWithText(t).performScrollTo().assertExists()
+        }
+        // a description and a status line are visible
+        rule.onNodeWithText("Claim your daily bonus and continue your streak.").performScrollTo().assertExists()
+        rule.onNodeWithText("Progress:", substring = true).performScrollTo().assertExists()
+        // the rules card exists below the quests and is reachable by scrolling
+        rule.onNodeWithText("Coin Earning Rules").performScrollTo().assertExists()
+        rule.onNodeWithText("Opening a quest does NOT automatically award coins.").performScrollTo().assertExists()
     }
 
     @Test

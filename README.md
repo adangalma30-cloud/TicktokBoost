@@ -26,10 +26,29 @@ with points and featured placement.
 | `0.0.2` | Polish release: icon, splash, trust system, transactions, notifications, dark/light | previous |
 | `0.0.3` | Economy hardening, anti-abuse, disputes, Premium (mock), admin dashboard, TikTok-inspired identity | previous |
 | `0.0.4` | Stability: duplicate-ID crash fixed (Notifications/History), quest engine, ligature-safe typography, long-name cards | previous |
-| `0.0.5` | UI correction: bundled Roboto font, horizontal premium badge, responsive creator cards, spacing polish | current |
+| `0.0.5` | UI correction: bundled Roboto font, horizontal premium badge, responsive creator cards, spacing polish | previous |
+| `0.0.6` | Earn screen fix: quest cards rebuilt (titles/descriptions/rewards visible), rules card, scroll polish | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v0.0.6 (Earn screen fix)
+
+- Root cause of the broken quest cards: action buttons used inside the quest
+  header Row demanded full row width (fillMaxWidth inside a Row), squeezing the
+  weighted title/description column to ~0 width — titles/descriptions invisible,
+  cards rendered as huge empty containers. Buttons now live on their own
+  full-width row at the bottom of each card; the header is emoji | text | reward.
+- Every quest card now shows: emoji, title, description, reward chip (+N),
+  status line (streak / progress / profile % / referral state), progress bar
+  when in progress, and a state-correct action (Check in / Continue /
+  Claim +N / ✓ Completed).
+- Emoji icon slot is fixed-width so glyph metrics can never distort the row.
+- "Coin Earning Rules" is now its own bulleted card below the quests —
+  no overlap, fully readable, reachable by scrolling.
+- Regression tests: Earn content presence + scroll-reachability for every quest
+  and the rules card (width assertions are unreliable under Robolectric with
+  bundled fonts — documented in the test).
 
 ## What's new in v0.0.5 (UI/typography correction)
 
