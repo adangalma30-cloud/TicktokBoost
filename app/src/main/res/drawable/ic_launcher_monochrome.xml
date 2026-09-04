@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFFFF" android:pathData="M 29.53,63.35 L 66.53,35.35 L 61.47,28.65 L 24.47,56.65 Z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M 69.00,29.50 L 68.95,38.54 L 59.05,25.46 Z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M 32.80,47.50 a 6.20,6.20 0 1 0 12.40,0 a 6.20,6.20 0 1 0 -12.40,0 Z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M 36.80,55.50 H 41.20 A 4.40,4.40 0 0 1 45.60,59.90 V 63.60 A 4.40,4.40 0 0 1 41.20,68.00 H 36.80 A 4.40,4.40 0 0 1 32.40,63.60 V 59.90 A 4.40,4.40 0 0 1 36.80,55.50 Z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M 45.10,44.50 a 7.40,7.40 0 1 0 14.80,0 a 7.40,7.40 0 1 0 -14.80,0 Z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M 49.70,53.60 H 55.30 A 5.10,5.10 0 0 1 60.40,58.70 V 62.90 A 5.10,5.10 0 0 1 55.30,68.00 H 49.70 A 5.10,5.10 0 0 1 44.60,62.90 V 58.70 A 5.10,5.10 0 0 1 49.70,53.60 Z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M 58.70,41.50 a 8.80,8.80 0 1 0 17.60,0 a 8.80,8.80 0 1 0 -17.60,0 Z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M 64.10,49.00 H 70.90 A 6.20,6.20 0 0 1 77.10,55.20 V 61.80 A 6.20,6.20 0 0 1 70.90,68.00 H 64.10 A 6.20,6.20 0 0 1 57.90,61.80 V 55.20 A 6.20,6.20 0 0 1 64.10,49.00 Z" />
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M 55.54 43.33H 45.33V 71.00H 37.14V 43.33H 27.12V 37.00H 55.54Z M 54.54 71.00V 37.00H 66.75Q 73.31 37.00 76.73 39.41Q 80.16 41.81 80.16 46.39Q 80.16 49.03 78.94 50.89Q 77.73 52.76 75.37 53.65Q 78.03 54.35 79.46 56.27Q 80.88 58.18 80.88 60.94Q 80.88 65.93 77.72 68.44Q 74.55 70.95 68.34 71.00ZM 62.74 56.55V 64.70H 68.11Q 70.32 64.70 71.52 63.68Q 72.71 62.66 72.71 60.82Q 72.71 56.57 68.48 56.55ZM 62.74 51.17H 67.01Q 69.69 51.15 70.84 50.19Q 71.98 49.24 71.98 47.37Q 71.98 45.22 70.75 44.27Q 69.51 43.33 66.75 43.33H 62.74Z" />
 </vector>
