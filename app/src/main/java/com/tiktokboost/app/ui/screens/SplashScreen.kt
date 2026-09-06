@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tiktokboost.app.ui.components.TbEmblem
 import com.tiktokboost.app.ui.theme.AppFont
-import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -62,14 +61,16 @@ fun SplashScreen(onDone: () -> Unit) {
 
     var t by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(Unit) {
-        val start = System.nanoTime()
-        val totalNanos = 1_950_000_000f
-        while (true) {
-            val p = (System.nanoTime() - start) / totalNanos
-            if (p >= 1f) break
-            t = p
-            awaitFrame()
+        // delay-stepped timeline: real time on device, virtual time in tests
+        val totalMs = 1950f
+        val step = 16L
+        var elapsed = 0f
+        while (elapsed < totalMs) {
+            t = (elapsed / totalMs).coerceIn(0f, 1f)
+            delay(step)
+            elapsed += step
         }
+        t = 1f
         onDone()
     }
 
@@ -77,8 +78,7 @@ fun SplashScreen(onDone: () -> Unit) {
     fun easeOut(f: Float): Float = 1f - (1f - f) * (1f - f)
 
     val glow = 0.30f * seg(0.06f, 0.30f)
-    var wordVisible by remember { mutableStateOf(false) }
-    wordVisible = seg(0.62f, 0.80f) > 0.5f
+    val wordVisible = seg(0.62f, 0.80f) > 0.5f
 
     // ── 4. ghosts converge and lock (staggered), face fades in last ─────────
     val cyanGhost = 46f - 43f * easeOut(seg(0.18f, 0.55f))     // 46 → 3
