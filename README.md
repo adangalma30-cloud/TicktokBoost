@@ -29,10 +29,21 @@ with points and featured placement.
 | `0.0.5` | UI correction: bundled Roboto font, horizontal premium badge, responsive creator cards, spacing polish | previous |
 | `0.0.6` | Earn screen fix: quest cards rebuilt (titles/descriptions/rewards visible), rules card, scroll polish | previous |
 | `0.0.7` | Launcher icon: "TB" monogram, TikTok-style cyan/pink duotone on near-black | previous |
-| `0.0.8` | Brand redesign: "Motion Lock" TB emblem (4 concepts evaluated), rebuilt splash animation, single brand asset | current |
+| `0.0.8` | Brand redesign: "Motion Lock" TB emblem (4 concepts evaluated), rebuilt splash animation, single brand asset | previous |
+| `0.0.9` | Performance: R8 minified + resource-shrunk APK (7.0 → 2.2 MB), success haptics | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v0.0.9 (performance & polish)
+
+- Release builds now R8-minified with resource shrinking: APK shrinks from
+  7.0 MB to 2.2 MB (-69%), single dex, faster cold start. Proguard rules keep
+  the enum-by-name persistence surface; bundled fonts verified present
+  (AGP resource-path shortening renames them in the APK).
+- Subtle success haptics at the four meaningful moments: exchange complete,
+  quest claim / daily check-in, boost activation, premium activation.
+- No functional changes. versionCode 9.
 
 ## What's new in v0.0.8 (brand redesign)
 
