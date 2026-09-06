@@ -153,6 +153,7 @@ fun EarnScreen(
             Text("Quests", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
             Spacer(Modifier.height(8.dp))
 
+            val successHaptic = com.tiktokboost.app.ui.components.rememberSuccessHaptic()
             Quests.all().forEach { (def, state) ->
                 QuestCard(def = def, state = state, cs = cs,
                     onAction = {
@@ -164,7 +165,10 @@ fun EarnScreen(
                             QuestType.SHARE_APP -> openShareSheet(context)
                         }
                     },
-                    onClaim = { msg = resultText(Quests.claim(def)) }
+                    onClaim = {
+                        successHaptic()
+                        msg = resultText(Quests.claim(def))
+                    }
                 )
                 Spacer(Modifier.height(10.dp))
             }
@@ -217,7 +221,9 @@ fun EarnScreen(
                 }
             },
             confirmButton = {
+                val successHaptic = com.tiktokboost.app.ui.components.rememberSuccessHaptic()
                 TextButton(onClick = {
+                    successHaptic()
                     val def = Quests.byId("q_checkin")!!
                     val res = Quests.claim(def)
                     msg = resultText(res)

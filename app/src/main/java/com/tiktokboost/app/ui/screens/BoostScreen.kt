@@ -104,8 +104,10 @@ fun BoostScreen(onOpenPremium: () -> Unit, onOpenAnalytics: () -> Unit) {
         }
 
         // ── tiers ────────────────────────────────────────────────────────
+        val successHaptic = com.tiktokboost.app.ui.components.rememberSuccessHaptic()
         BoostTier.entries.forEach { tier ->
             BoostTierCard(tier = tier) { res ->
+                if (res is EconomyResult.Success) successHaptic()
                 toast = when (res) {
                     is EconomyResult.Success -> res.message ?: "Boost activated!"
                     is EconomyResult.Failure -> AppState.detailFor(res.reason)

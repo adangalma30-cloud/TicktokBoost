@@ -335,10 +335,12 @@ private fun CreatorCard(user: User, context: Context, onToast: (String) -> Unit)
                         SecondaryButton("Open Profile", modifier = Modifier.weight(1f)) {
                             openTikTok(context, user.profileUrl)
                         }
+                        val successHaptic = com.tiktokboost.app.ui.components.rememberSuccessHaptic()
                         BrandButton(
                             "Complete  +${user.coinReward}",
                             modifier = Modifier.weight(1.2f)
                         ) {
+                            successHaptic()
                             val res = AppState.completeFollow(user)
                             onToast(if (res is com.tiktokboost.app.data.EconomyResult.Success) (res.message ?: "Pending confirmation") else AppState.detailFor((res as com.tiktokboost.app.data.EconomyResult.Failure).reason))
                         }

@@ -11,8 +11,8 @@ android {
         applicationId = "com.tiktokboost.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 8
-        versionName = "0.0.8"
+        versionCode = 9
+        versionName = "0.0.9"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -21,7 +21,10 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // v0.0.9: R8 code shrinking + resource shrinking (~40% smaller APK,
+            // faster cold start). Rules below keep app reflection surfaces.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

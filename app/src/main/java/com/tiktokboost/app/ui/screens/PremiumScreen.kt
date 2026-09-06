@@ -222,11 +222,13 @@ fun PremiumScreen(onBack: () -> Unit) {
         }
 
         // simulate payment completion
+        val successHaptic = com.tiktokboost.app.ui.components.rememberSuccessHaptic()
         LaunchedEffect(processingTier) {
             val tier = processingTier ?: return@LaunchedEffect
             kotlinx.coroutines.delay(1600)
             val res = AppState.purchasePremium(tier, selectedPlan)
             processingTier = null
+            if (res is EconomyResult.Success) successHaptic()
             toast = when (res) {
                 is EconomyResult.Success -> "${tier.label} activated — enjoy! ✨"
                 is EconomyResult.Failure -> AppState.detailFor(res.reason)

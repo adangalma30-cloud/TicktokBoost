@@ -142,6 +142,13 @@ fun Wordmark(modifier: Modifier = Modifier, markSize: Dp = 30.dp) {
 
 // ═══════════════════════════════ press feedback ═══════════════════════════════
 
+/** Light haptic for meaningful moments (claims, purchases, completions). */
+@Composable
+fun rememberSuccessHaptic(): () -> Unit {
+    val hf = androidx.compose.ui.platform.LocalHapticFeedback.current
+    return { hf.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress) }
+}
+
 /** Smooth press-down scale driven by an interaction source you share with the clickable. */
 @Composable
 fun rememberPressScale(
