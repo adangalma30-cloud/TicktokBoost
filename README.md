@@ -28,10 +28,25 @@ with points and featured placement.
 | `0.0.4` | Stability: duplicate-ID crash fixed (Notifications/History), quest engine, ligature-safe typography, long-name cards | previous |
 | `0.0.5` | UI correction: bundled Roboto font, horizontal premium badge, responsive creator cards, spacing polish | previous |
 | `0.0.6` | Earn screen fix: quest cards rebuilt (titles/descriptions/rewards visible), rules card, scroll polish | previous |
-| `0.0.7` | New official launcher icon: "TB" monogram, TikTok-style cyan/pink duotone on near-black | current |
+| `0.0.7` | Launcher icon: "TB" monogram, TikTok-style cyan/pink duotone on near-black | previous |
+| `0.0.8` | Brand redesign: "Motion Lock" TB emblem (4 concepts evaluated), rebuilt splash animation, single brand asset | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v0.0.8 (brand redesign)
+
+- Four distinct TB emblem concepts designed & evaluated (A Motion Lock, B Play Bowl,
+  C Boost Ascent, D Overprint); **Concept A "Motion Lock"** selected — the T's rising
+  crossbar shares its stem with the B's spine, one fused emblem in the signature
+  duotone (cyan ghost ↖, pink ghost ↘, white face). Previews in `art/concepts/`.
+- ONE brand asset: `TbEmblem.kt` (Composable) mirrors `tools_tbemblem.py` geometry and
+  powers the launcher vectors, splash, and every in-app LogoMark.
+- Splash rebuilt (~1.95s, tap-to-skip): dark stage → dual cyan/pink glow → converging
+  motion trails → emblem assembles from its own duotone layers → subtle forward boost →
+  settle → wordmark + tagline. Timeline is delay-stepped (virtual-time friendly).
+- Old icon fully purged (generators, assets and drawing code removed; themes aligned).
+- Full suite 12/12 including launch-with-new-splash; CI green; versionCode 8.
 
 ## What's new in v0.0.7 (official launcher icon)
 
