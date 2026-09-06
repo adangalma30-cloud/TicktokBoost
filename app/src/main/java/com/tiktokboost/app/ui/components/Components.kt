@@ -116,96 +116,14 @@ object Dimens {
 
 // ═══════════════════════════════ logo (matches the app icon mark) ═══════════════
 
-private const val LOGO_ARROW_FROM_X = 27f
-private const val LOGO_ARROW_FROM_Y = 60f
-private const val LOGO_ARROW_TO_X = 64f
-private const val LOGO_ARROW_TO_Y = 32f
-private val LogoFigureColors = listOf(Color(0xFF9C9CB0), Color(0xFF4DE0DC), Color(0xFF7A96))
-
 /**
- * The TikTokBoost "Ascent Trio" brand mark — three creators rising along a
- * boost arrow. Same geometry as the launcher icon so the brand stays identical
- * everywhere. Reads well on dark and light backgrounds.
+ * The TickTokBoost brand mark — the official "Motion Lock" TB emblem
+ * (see [TbEmblem]). Identical to the launcher icon; used on the splash,
+ * Home header, Welcome, auth and Settings screens.
  */
 @Composable
 fun LogoMark(modifier: Modifier = Modifier, size: Dp) {
-    val ink = LocalContentColor.current
-    Canvas(modifier.size(size)) {
-        val s = this.size.width / 108f
-        // ---- boost arrow (behind the figures) ----
-        val ax = LOGO_ARROW_FROM_X * s
-        val ay = LOGO_ARROW_FROM_Y * s
-        val bx = LOGO_ARROW_TO_X * s
-        val by = LOGO_ARROW_TO_Y * s
-        val len = hypot(bx - ax, by - ay)
-        val ux = (bx - ax) / len
-        val uy = (by - ay) / len
-        val px = -uy
-        val py = ux
-        val half = 4.2f * s
-        val wing = 8.2f * s
-        val tipX = 69f * s
-        val tipY = 29.5f * s
-
-        val arrow = Path().apply {
-            moveTo(ax + px * half, ay + py * half)
-            lineTo(bx + px * half, by + py * half)
-            lineTo(bx - px * half, by - py * half)
-            lineTo(ax - px * half, ay - py * half)
-            close()
-        }
-        val head = Path().apply {
-            moveTo(tipX, tipY)
-            lineTo(bx + px * wing, by + py * wing)
-            lineTo(bx - px * wing, by - py * wing)
-            close()
-        }
-        val brush = Brush.linearGradient(
-            listOf(Color(0xFF25F4EE), Color(0xFFFE2C55)),
-            start = Offset(ax, ay),
-            end = Offset(tipX, tipY)
-        )
-        drawPath(arrow, brush)
-        drawPath(head, Color(0xFFFE2C55))
-
-        // ---- three ascending creators ----
-        data class Fig(val hx: Float, val hy: Float, val hr: Float, val tx: Float, val ty: Float, val tw: Float, val th: Float, val tr: Float)
-        val figs = listOf(
-            Fig(39f, 47.5f, 6.2f, 32.4f, 55.5f, 13.2f, 12.5f, 4.4f),
-            Fig(52.5f, 44.5f, 7.4f, 44.6f, 53.6f, 15.8f, 14.4f, 5.1f),
-            Fig(67.5f, 41.5f, 8.8f, 57.9f, 49.0f, 19.2f, 19.0f, 6.2f)
-        )
-        figs.forEachIndexed { i, f ->
-            val color = LogoFigureColors[i]
-            drawCircle(color, radius = f.hr * s, center = Offset(f.hx * s, f.hy * s))
-            val r = f.tr * s
-            val torso = Path().apply {
-                moveTo(f.tx * s + r, f.ty * s)
-                lineTo((f.tx + f.tw) * s - r, f.ty * s)
-                arcTo(
-                    rect = Rect((f.tx + f.tw) * s - 2 * r, f.ty * s, (f.tx + f.tw) * s, f.ty * s + 2 * r),
-                    startAngleDegrees = -90f, sweepAngleDegrees = 90f, forceMoveTo = false
-                )
-                lineTo((f.tx + f.tw) * s, (f.ty + f.th) * s - r)
-                arcTo(
-                    rect = Rect((f.tx + f.tw) * s - 2 * r, (f.ty + f.th) * s - 2 * r, (f.tx + f.tw) * s, (f.ty + f.th) * s),
-                    startAngleDegrees = 0f, sweepAngleDegrees = 90f, forceMoveTo = false
-                )
-                lineTo(f.tx * s + r, (f.ty + f.th) * s)
-                arcTo(
-                    rect = Rect(f.tx * s, (f.ty + f.th) * s - 2 * r, f.tx * s + 2 * r, (f.ty + f.th) * s),
-                    startAngleDegrees = 90f, sweepAngleDegrees = 90f, forceMoveTo = false
-                )
-                lineTo(f.tx * s, f.ty * s + r)
-                arcTo(
-                    rect = Rect(f.tx * s, f.ty * s, f.tx * s + 2 * r, f.ty * s + 2 * r),
-                    startAngleDegrees = 180f, sweepAngleDegrees = 90f, forceMoveTo = false
-                )
-                close()
-            }
-            drawPath(torso, color)
-        }
-    }
+    TbEmblem(modifier = modifier, size = size)
 }
 
 /** Wordmark: brand mark + product name. Used on Home and auth screens. */
