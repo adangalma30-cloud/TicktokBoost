@@ -74,7 +74,7 @@ import com.tiktokboost.app.ui.components.statusHint
 import com.tiktokboost.app.ui.theme.GoodGreen
 
 @Composable
-fun ExchangeScreen(onOpenPremium: () -> Unit) {
+fun ExchangeScreen(onOpenPremium: () -> Unit, onOpenCreator: (String) -> Unit = {}) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf(MockData.filters.first()) }
@@ -197,7 +197,7 @@ fun ExchangeScreen(onOpenPremium: () -> Unit) {
                 ) {
                     items(ranked, key = { it.id }) { user ->
                         StaggeredAppear(index = ranked.indexOf(user) % 6) {
-                            CreatorCard(user, context) { toast = it }
+                            CreatorCard(user, context, onOpenCreator) { toast = it }
                         }
                     }
                 }
@@ -237,10 +237,10 @@ private fun SkeletonCreatorCard() {
     }
 }
 
-private val reportReasons = listOf("Spam", "Harassment", "Fake profile", "Suspicious behavior", "Repeated false claims", "Other")
+val reportReasons = listOf("Spam", "Harassment", "Fake profile", "Suspicious behavior", "Repeated false claims", "Other")
 
 @Composable
-private fun CreatorCard(user: User, context: Context, onToast: (String) -> Unit) {
+private fun CreatorCard(user: User, context: Context, onOpenCreator: (String) -> Unit, onToast: (String) -> Unit) {
     val cs = MaterialTheme.colorScheme
     val status = AppState.followStatus(user.id)
     val tx = AppState.transactionFor(user.id)
@@ -289,7 +289,7 @@ private fun CreatorCard(user: User, context: Context, onToast: (String) -> Unit)
         )
     }
 
-    BrandCard(onLongClick = { actionsOpen = true }) {
+    BrandCard(onClick = { onOpenCreator(user.id) }, onLongClick = { actionsOpen = true }) {
         Column(Modifier.padding(Dimens.card)) {
 
             // ── identity: avatar | name/username; badges flow on their OWN row ──

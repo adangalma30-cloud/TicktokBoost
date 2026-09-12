@@ -37,6 +37,42 @@ object AppState {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    // ── appearance (v0.0.12): reactive, persisted, applies app-wide ──
+    var themeMode by mutableStateOf("system")
+        private set
+    var notificationsEnabled by mutableStateOf(true)
+        private set
+    var hapticsEnabled by mutableStateOf(true)
+        private set
+    var language by mutableStateOf("system")
+        private set
+    var discoverable by mutableStateOf(true)
+        private set
+
+    fun setTheme(mode: String) { Session.themeMode = mode; themeMode = mode }
+    fun setNotifications(enabled: Boolean) { Session.notificationsEnabled = enabled; notificationsEnabled = enabled }
+    fun setHaptics(enabled: Boolean) { Session.hapticsEnabled = enabled; hapticsEnabled = enabled }
+    fun updateLanguage(code: String) { Session.language = code; language = code }
+    fun updateDiscoverable(enabled: Boolean) { Session.discoverable = enabled; discoverable = enabled }
+
+    // own creator content (observable)
+    val contentItems = mutableStateListOf<com.tiktokboost.app.data.ContentItem>()
+
+    fun addContent(item: com.tiktokboost.app.data.ContentItem) {
+        Session.addContentItem(item)
+        contentItems.clear(); contentItems.addAll(Session.contentItems())
+    }
+
+    fun updateContent(item: com.tiktokboost.app.data.ContentItem) {
+        Session.updateContentItem(item)
+        contentItems.clear(); contentItems.addAll(Session.contentItems())
+    }
+
+    fun deleteContent(id: String) {
+        Session.deleteContentItem(id)
+        contentItems.clear(); contentItems.addAll(Session.contentItems())
+    }
+
     // ── core balances ────────────────────────────────────────────────
     var coins by mutableIntStateOf(0); private set
     var pendingCoins by mutableIntStateOf(0); private set
@@ -90,6 +126,12 @@ object AppState {
     var lastResult by mutableStateOf<EconomyResult?>(null)
 
     fun refresh() {
+        themeMode = Session.themeMode
+        notificationsEnabled = Session.notificationsEnabled
+        hapticsEnabled = Session.hapticsEnabled
+        language = Session.language
+        discoverable = Session.discoverable
+        contentItems.clear(); contentItems.addAll(Session.contentItems())
         coins = Session.coins
         pendingCoins = EconomyService.pendingCoins()
         lifetimeEarned = Session.lifetimeEarned

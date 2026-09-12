@@ -32,10 +32,30 @@ with points and featured placement.
 | `0.0.8` | Brand redesign: "Motion Lock" TB emblem (4 concepts evaluated), rebuilt splash animation, single brand asset | previous |
 | `0.0.9` | Performance: R8 minified + resource-shrunk APK (7.0 → 2.2 MB), success haptics | previous |
 | `0.0.10` | Icon redesign: "Creator Rise" (6 concepts evaluated) — creator + ascending growth in the signature duotone | previous |
-| `0.0.11` | FINAL MVP: expiration, blocking/reporting, match score + For You, setup wizard, profile pictures, referral dashboard, auth hardening | current |
+| `0.0.11` | FINAL MVP: expiration, blocking/reporting, match score + For You, setup wizard, profile pictures, referral dashboard, auth hardening | previous |
+| `0.0.12` | Settings system (working theme switch + persistence), public creator profiles with photo/video content, content management | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v0.0.12 (settings + creator profiles)
+
+- Settings, rebuilt and real: Light / Dark / System theme that applies instantly
+  app-wide and persists across restarts; Notifications toggle (actually suppresses
+  new notifications); vibration/haptics preference; language selector (structure
+  ready for translations); privacy (discoverable toggle, blocked users); account
+  (subscription, logout, delete-account with confirmation); Help & Support (FAQ +
+  mailto contact); About with version.
+- Public creator profiles: opened by tapping any card in For You / Discover —
+  header, bio, trust + stats, match chip, achievements, shared activity, and the
+  full exchange flow; Report/Block as secondary actions.
+- Creator content: photos and short videos in a responsive grid on profiles
+  (captions, play overlays); video playback for your own uploads with loading and
+  error states; demo creators get sample content tiles (no external scraping).
+- My content management (Profile): add photo / add video via the system picker,
+  edit captions, delete with confirmation, saving state.
+- Tests: theme persistence, notification gate, content CRUD, creator-profile
+  navigation (V12Test 4/4; full suite 20/20).
 
 ## What's new in v0.0.11 (final MVP completion)
 

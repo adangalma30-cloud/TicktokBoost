@@ -399,6 +399,7 @@ object Session {
         try { JSONArray(sp.getString("notifications", "[]") ?: "[]") } catch (e: Exception) { JSONArray() }
 
     fun addNotification(kind: String, title: String, message: String, timestamp: Long = System.currentTimeMillis()) {
+        if (!notificationsEnabled) return   // settings toggle — no new notifications when off
         val arr = notifJson()
         // collision-proof id: same-millisecond notifications would otherwise
         // produce duplicate LazyColumn keys and crash the Notifications screen
@@ -513,6 +514,85 @@ object Session {
 
     fun doCheckIn() {
         sp.edit().putString("last_checkin", today()).apply()
+    }
+
+    // ---- settings (v0.0.12) -----------------------------------------------------------------------------------------
+
+    var themeMode: String   // "system" | "light" | "dark" — applied app-wide, persisted
+        get() = sp.getString("theme_mode", "system") ?: "system"
+        set(value) { sp.edit().putString("theme_mode", value).apply() }
+
+    var notificationsEnabled: Boolean
+        get() = sp.getBoolean("notifications_enabled", true)
+        set(value) { sp.edit().putBoolean("notifications_enabled", value).apply() }
+
+    var hapticsEnabled: Boolean
+        get() = sp.getBoolean("haptics_enabled", true)
+        set(value) { sp.edit().putBoolean("haptics_enabled", value).apply() }
+
+    var language: String    // "system" | "en" | "sw" — structure ready for localization
+        get() = sp.getString("language", "system") ?: "system"
+        set(value) { sp.edit().putString("language", value).apply() }
+
+    var discoverable: Boolean // privacy: appear in other users' discovery
+        get() = sp.getBoolean("discoverable", true)
+        set(value) { sp.edit().putBoolean("discoverable", value).apply() }
+
+    // ---- creator content (v0.0.12): own uploaded photos / videos ------------------
+
+    private fun contentJson(): org.json.JSONArray =
+        try { org.json.JSONArray(sp.getString("content_items", "[]") ?: "[]") } catch (e: Exception) { org.json.JSONArray() }
+
+    private fun saveContent(arr: org.json.JSONArray) {
+        sp.edit().putString("content_items", arr.toString()).apply()
+    }
+
+    fun contentItems(): List<ContentItem> {
+        val arr = contentJson()
+        val out = mutableListOf<ContentItem>()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            out.add(
+                ContentItem(
+                    id = o.optString("id"),
+                    mediaType = runCatching { MediaType.valueOf(o.optString("type")) }.getOrDefault(MediaType.PHOTO),
+                    path = o.optString("path").ifEmpty { null },
+                    caption = o.optString("caption"),
+                    createdAt = o.optLong("created"),
+                    updatedAt = o.optLong("updated"),
+                    demoVisual = o.optString("demo").ifEmpty { null }
+                )
+            )
+        }
+        return out.sortedByDescending { it.createdAt }
+    }
+
+    fun addContentItem(item: ContentItem) {
+        val arr = contentJson()
+        val o = org.json.JSONObject()
+        o.put("id", item.id); o.put("type", item.mediaType.name); o.put("path", item.path ?: "")
+        o.put("caption", item.caption); o.put("created", item.createdAt)
+        o.put("updated", item.updatedAt); o.put("demo", item.demoVisual ?: "")
+        arr.put(o)
+        saveContent(arr)
+    }
+
+    fun updateContentItem(item: ContentItem) {
+        val arr = contentJson()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            if (o.optString("id") == item.id) {
+                o.put("caption", item.caption); o.put("updated", item.updatedAt)
+                arr.put(i, o); saveContent(arr); return
+            }
+        }
+    }
+
+    fun deleteContentItem(id: String) {
+        val arr = contentJson()
+        for (i in 0 until arr.length()) {
+            if (arr.optJSONObject(i)?.optString("id") == id) { arr.remove(i); saveContent(arr); return }
+        }
     }
 
     // ---- profile picture (v0.0.11) --------------------------------------------------------------------------------

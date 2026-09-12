@@ -100,7 +100,11 @@ val BoostTypography = Typography(
 
 @Composable
 fun TikTokBoostTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = when (com.tiktokboost.app.ui.AppState.themeMode) {
+        "light" -> false
+        "dark" -> true
+        else -> isSystemInDarkTheme()
+    },
     content: @Composable () -> Unit
 ) {
     MaterialTheme(

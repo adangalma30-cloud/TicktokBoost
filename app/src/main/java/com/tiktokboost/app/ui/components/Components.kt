@@ -148,7 +148,11 @@ fun Wordmark(modifier: Modifier = Modifier, markSize: Dp = 30.dp) {
 @Composable
 fun rememberSuccessHaptic(): () -> Unit {
     val hf = androidx.compose.ui.platform.LocalHapticFeedback.current
-    return { hf.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress) }
+    return {
+        if (com.tiktokboost.app.data.Session.hapticsEnabled) {
+            hf.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+        }
+    }
 }
 
 /** Smooth press-down scale driven by an interaction source you share with the clickable. */

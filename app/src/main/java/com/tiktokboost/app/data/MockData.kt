@@ -128,6 +128,33 @@ object MockData {
     const val DEMO_CONFIRM_DELAY = 8_000L
     const val DEMO_DISPUTE_RESOLVE_DELAY = 15_000L
 
+    /** Demo content tiles for mock creators (emoji visuals — no external assets). */
+    fun contentFor(u: User): List<ContentItem> {
+        val visuals = when (u.category) {
+            "Gaming" -> listOf("🎮", "🕹️", "Streamer setup 🎮", "Clutch moment 🏆")
+            "Football" -> listOf("⚽", "🥾", "Freestyle Friday ⚽", "Match day 🔥")
+            "Music" -> listOf("🎧", "🎹", "New drop Friday 🎧", "Studio session 🎤")
+            "Comedy" -> listOf("🎭", "😂", "Campus skit 🎭", "POV: Nairobi traffic 😂")
+            "Fashion" -> listOf("👗", "🛍️", "Thrift haul 🛍️", "Fit check 👗")
+            "Beauty" -> listOf("💅", "✨", "Glow routine ✨", "Honest review 💅")
+            "Education" -> listOf("🔬", "📚", "Science in 60s 🔬", "Study hack 📚")
+            "Tech" -> listOf("💻", "📱", "Editing tips 💻", "App review 📱")
+            else -> listOf("🌟", "📸", "Day in my life 🌟", "Behind the scenes 📸")
+        }
+        val now = System.currentTimeMillis()
+        return visuals.mapIndexed { i, v ->
+            ContentItem(
+                id = "${u.id}_c$i",
+                mediaType = if (i % 2 == 1) MediaType.VIDEO else MediaType.PHOTO,
+                path = null,
+                caption = if (v.length > 2) v else "$v ${u.niche} vibes",
+                createdAt = now - (i + 1) * 86_400_000L,
+                updatedAt = now - (i + 1) * 86_400_000L,
+                demoVisual = v.take(2)
+            )
+        }
+    }
+
     val disputeReasons = listOf(
         "They didn't follow me back",
         "Wrong or fake profile",

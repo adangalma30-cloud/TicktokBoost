@@ -72,6 +72,44 @@ fun ProfileScreen(
             AppState.refresh()
         } catch (e: Exception) { /* keep initials avatar */ }
     }
+    var saving by remember { mutableStateOf<String?>(null) }
+    var editItem by remember { mutableStateOf<com.tiktokboost.app.data.ContentItem?>(null) }
+    var deleteItem by remember { mutableStateOf<com.tiktokboost.app.data.ContentItem?>(null) }
+
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        saving = "Saving photo…"
+        Thread {
+            try {
+                val f = java.io.File(context.filesDir, "content_${System.currentTimeMillis()}.jpg")
+                context.contentResolver.openInputStream(uri)?.use { input -> f.outputStream().use { input.copyTo(it) } }
+                AppState.addContent(
+                    com.tiktokboost.app.data.ContentItem(
+                        "c_${System.currentTimeMillis()}", com.tiktokboost.app.data.MediaType.PHOTO,
+                        f.absolutePath, "", System.currentTimeMillis(), System.currentTimeMillis()
+                    )
+                )
+            } catch (e: Exception) { /* skip invalid media */ }
+            saving = null
+        }.start()
+    }
+    val videoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        saving = "Saving video…"
+        Thread {
+            try {
+                val f = java.io.File(context.filesDir, "content_${System.currentTimeMillis()}.mp4")
+                context.contentResolver.openInputStream(uri)?.use { input -> f.outputStream().use { input.copyTo(it) } }
+                AppState.addContent(
+                    com.tiktokboost.app.data.ContentItem(
+                        "c_${System.currentTimeMillis()}", com.tiktokboost.app.data.MediaType.VIDEO,
+                        f.absolutePath, "", System.currentTimeMillis(), System.currentTimeMillis()
+                    )
+                )
+            } catch (e: Exception) { /* skip invalid media */ }
+            saving = null
+        }.start()
+    }
     var name by remember { mutableStateOf(AppState.displayName) }
     var tiktok by remember { mutableStateOf(AppState.tiktokUsername) }
     var bio by remember { mutableStateOf(AppState.bio) }
@@ -258,6 +296,56 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(18.dp))
 
+            // ── my content: photos & short videos on my public profile ──
+            Text("My content", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Photos and videos shown on your public creator profile.",
+                style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            com.tiktokboost.app.ui.screens.ContentGrid(
+                items = AppState.contentItems,
+                onOpen = { },
+                editable = true
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SecondaryButton("📷 Add photo", modifier = Modifier.weight(1f)) { photoPicker.launch("image/*") }
+                SecondaryButton("🎬 Add video", modifier = Modifier.weight(1f)) { videoPicker.launch("video/*") }
+            }
+            saving?.let {
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(14.dp),
+                        strokeWidth = 2.dp,
+                        color = cs.primary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(it, style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant)
+                }
+            }
+            // per-item manage rows
+            AppState.contentItems.forEach { item ->
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        (if (item.mediaType == com.tiktokboost.app.data.MediaType.VIDEO) "🎬" else "📷") +
+                            " " + item.caption.ifBlank { "(no caption)" },
+                        style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
+                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    androidx.compose.material3.TextButton(onClick = { editItem = item }) { Text("Edit", color = cs.primary, fontSize = 12.sp) }
+                    androidx.compose.material3.TextButton(onClick = { deleteItem = item }) { Text("Delete", color = cs.error, fontSize = 12.sp) }
+                }
+            }
+
+            Spacer(Modifier.height(18.dp))
+
             // ── edit profile (all completeness fields) ───────────────────
             BrandCard {
                 Column(Modifier.padding(Dimens.card)) {
@@ -330,6 +418,45 @@ fun ProfileScreen(
             }
             Spacer(Modifier.height(20.dp))
         }
+    }
+
+    // ── edit caption dialog ────────────────────────────────────────
+    editItem?.let { item ->
+        var caption by remember(item.id) { mutableStateOf(item.caption) }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { editItem = null },
+            title = { Text("Edit caption") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = caption, onValueChange = { caption = it },
+                    label = { Text("Caption") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    AppState.updateContent(item.copy(caption = caption.trim(), updatedAt = System.currentTimeMillis()))
+                    editItem = null
+                }) { Text("Save", color = cs.primary, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { editItem = null }) { Text("Cancel") } }
+        )
+    }
+
+    // ── delete confirmation ────────────────────────────────────────
+    deleteItem?.let { item ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { deleteItem = null },
+            title = { Text("Delete this ${if (item.mediaType == com.tiktokboost.app.data.MediaType.VIDEO) "video" else "photo"}?") },
+            text = { Text("This removes it from your public profile. This cannot be undone.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    AppState.deleteContent(item.id)
+                    deleteItem = null
+                }) { Text("Delete", color = cs.error, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { deleteItem = null }) { Text("Cancel") } }
+        )
     }
 }
 

@@ -36,6 +36,7 @@ import com.tiktokboost.app.ui.screens.AdminScreen
 import com.tiktokboost.app.ui.screens.AnalyticsScreen
 import com.tiktokboost.app.ui.screens.BoostScreen
 import com.tiktokboost.app.ui.screens.CoinsScreen
+import com.tiktokboost.app.ui.screens.CreatorProfileScreen
 import com.tiktokboost.app.ui.screens.EarnScreen
 import com.tiktokboost.app.ui.screens.ExchangeScreen
 import com.tiktokboost.app.ui.screens.HistoryScreen
@@ -72,6 +73,7 @@ object Routes {
     const val REFERRAL = "referral"
     const val SETUP = "setup"
     const val BLOCKED = "blocked"
+    const val CREATOR = "creator/{userId}"
 
     val bottomTabs = listOf(HOME, DISCOVER, EARN, BOOST, PROFILE)
 }
@@ -191,7 +193,17 @@ fun TikTokBoostApp() {
                 )
             }
             composable(Routes.DISCOVER) {
-                ExchangeScreen(onOpenPremium = { navController.navigate(Routes.PREMIUM) })
+                ExchangeScreen(
+                    onOpenPremium = { navController.navigate(Routes.PREMIUM) },
+                    onOpenCreator = { id -> navController.navigate("creator/$id") }
+                )
+            }
+            composable(
+                Routes.CREATOR,
+                arguments = listOf(androidx.navigation.navArgument("userId") { type = androidx.navigation.NavType.StringType })
+            ) { entry ->
+                val id = entry.arguments?.getString("userId") ?: return@composable
+                CreatorProfileScreen(userId = id, onBack = { navController.popBackStack() })
             }
             composable(Routes.EARN) {
                 EarnScreen(

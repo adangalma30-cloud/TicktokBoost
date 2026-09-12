@@ -92,6 +92,20 @@ data class DisputeRecord(
     val status: DisputeStatus
 )
 
+// ── creator content (photos / short videos shown on public profiles) ───────
+
+enum class MediaType { PHOTO, VIDEO }
+
+data class ContentItem(
+    val id: String,
+    val mediaType: MediaType,
+    val path: String?,            // local file (own uploads) or supported media URL
+    val caption: String,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val demoVisual: String? = null // emoji tile for demo creators (no external assets)
+)
+
 // ── creator reports (admin review) ─────────────────────────────────────────
 
 data class Report(
