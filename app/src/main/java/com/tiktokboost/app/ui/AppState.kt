@@ -55,6 +55,80 @@ object AppState {
     fun updateLanguage(code: String) { Session.language = code; language = code }
     fun updateDiscoverable(enabled: Boolean) { Session.discoverable = enabled; discoverable = enabled }
 
+    // referrals (persistent, repeatable)
+    val referrals = mutableStateListOf<com.tiktokboost.app.data.Referral>()
+
+    fun referralStats(): Triple<Int, Int, Int> {
+        val list = referrals
+        val rewarded = list.count { it.status == com.tiktokboost.app.data.ReferralStatus.REWARDED }
+        val coins = list.filter { it.status == com.tiktokboost.app.data.ReferralStatus.REWARDED }.sumOf { it.rewardAmount }
+        return Triple(list.size, rewarded, coins)
+    }
+
+    /** A friend joined via your code (demo simulation creates the record). */
+    fun simulateFriendJoining(): com.tiktokboost.app.data.Referral {
+        val names = listOf("Michael", "Amina", "David", "Wanjiru", "Kofi", "Neema", "Brian", "Fatuma")
+        val now = System.currentTimeMillis()
+        val name = names[(now / 1000 % names.size).toInt()]
+        val r = com.tiktokboost.app.data.Referral(
+            id = "rf_$now",
+            referrerUserId = "you",
+            referredUserId = "friend_$now",
+            referredName = name,
+            referralCode = Session.referralCode(),
+            status = com.tiktokboost.app.data.ReferralStatus.REGISTERED,
+            createdAt = now,
+            rewardAmount = EconomyConfig.REFERRAL_REWARD
+        )
+        Session.addReferral(r)
+        Session.referralInvited = Session.referralInvited + 1
+        Session.addNotification(
+            "exchange", "$name joined with your referral code.",
+            "When they complete their first confirmed exchange, your reward unlocks."
+        )
+        refresh()
+        return r
+    }
+
+    /** The referred friend completed a qualifying exchange (demo). */
+    fun simulateFriendQualifying(id: String) {
+        val r = referrals.firstOrNull { it.id == id } ?: return
+        if (r.status != com.tiktokboost.app.data.ReferralStatus.REGISTERED) return
+        Session.updateReferral(r.copy(status = com.tiktokboost.app.data.ReferralStatus.QUALIFIED, qualifiedAt = System.currentTimeMillis()))
+        Session.addNotification(
+            "coins", "${r.referredName} qualified — referral reward unlocked!",
+            "Claim +${r.rewardAmount} coins in Invite Friends."
+        )
+        refresh()
+    }
+
+    /** Idempotent referral reward claim — never pays the same referral twice. */
+    fun claimReferralReward(id: String): EconomyResult {
+        val r = referrals.firstOrNull { it.id == id } ?: return EconomyResult.Failure(FailureReason.INVALID_STATE)
+        if (r.status == com.tiktokboost.app.data.ReferralStatus.REWARDED) {
+            return EconomyResult.Failure(FailureReason.DUPLICATE, "This referral was already rewarded.")
+        }
+        if (r.status != com.tiktokboost.app.data.ReferralStatus.QUALIFIED) {
+            return EconomyResult.Failure(FailureReason.INVALID_STATE, "This referral hasn't qualified yet.")
+        }
+        if (Session.referralRewardsToday() >= EconomyConfig.REFERRAL_DAILY_REWARD_LIMIT) {
+            return EconomyResult.Failure(FailureReason.DAILY_CAP_REACHED,
+                "Daily referral reward limit reached (${EconomyConfig.REFERRAL_DAILY_REWARD_LIMIT}). Come back tomorrow.")
+        }
+        // central economy grant with a unique, idempotent reference
+        val grant = EconomyService.grantSmall("Referral: ${r.referredName}", TxType.BONUS, r.rewardAmount, "Referral reward · ${r.referralCode} · ${r.referredUserId}")
+        if (grant is EconomyResult.Failure) return grant
+        val txId = "rftx_${r.id}"
+        Session.updateReferral(r.copy(status = com.tiktokboost.app.data.ReferralStatus.REWARDED, rewardTransactionId = txId, rewardedAt = System.currentTimeMillis()))
+        Session.addNotification(
+            "coins", "Referral reward claimed.",
+            "+${r.rewardAmount} coins for ${r.referredName}'s qualified referral."
+        )
+        checkAchievements()
+        refresh()
+        return EconomyResult.Success(r.rewardAmount, "+${r.rewardAmount} coins · referral rewarded")
+    }
+
     // own creator content (observable)
     val contentItems = mutableStateListOf<com.tiktokboost.app.data.ContentItem>()
 
@@ -132,6 +206,7 @@ object AppState {
         language = Session.language
         discoverable = Session.discoverable
         contentItems.clear(); contentItems.addAll(Session.contentItems())
+        referrals.clear(); referrals.addAll(Session.referrals())
         coins = Session.coins
         pendingCoins = EconomyService.pendingCoins()
         lifetimeEarned = Session.lifetimeEarned

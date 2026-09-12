@@ -45,8 +45,6 @@ object Quests {
             "Complete qualifying exchanges in Discover.", 5, FOLLOW_QUEST_REQUIREMENT, "Go to Discover"),
         QuestDef("q_profile", QuestType.COMPLETE_PROFILE, "Complete your profile",
             "Add your bio and category — reach $PROFILE_THRESHOLD% profile completion.", 5, PROFILE_THRESHOLD, "Edit profile"),
-        QuestDef("q_invite", QuestType.INVITE_FRIEND, "Invite a friend",
-            "Share your referral link; claim once your friend joins (demo).", 10, 1, "Invite"),
         QuestDef("q_share", QuestType.SHARE_APP, "Share the app",
             "Share TickTokBoost with your community.", 3, 1, "Share")
     )
@@ -99,8 +97,8 @@ object Quests {
         QuestType.DAILY_CHECKIN -> if (Session.canCheckIn()) 0 else 1
         QuestType.FOLLOW_CREATORS -> minOf(Session.followedCount(), def.requirement)
         QuestType.COMPLETE_PROFILE -> AppState.computeProfileCompleteness()
-        QuestType.INVITE_FRIEND -> if (Session.referralQualified) 1 else 0
         QuestType.SHARE_APP -> if (Session.sharedAppOnce) 1 else 0
+        else -> 0
     }
 
     private fun save(state: QuestState) {
@@ -119,11 +117,6 @@ object Quests {
     /** Called when the native share sheet actually opened for the app-share quest. */
     fun onAppShared() {
         Session.sharedAppOnce = true
-    }
-
-    /** Called when a referred friend (mock) qualifies. */
-    fun onReferralQualified() {
-        Session.referralQualified = true
     }
 
     // ── claiming (the ONLY path to rewards) ──────────────────────────────

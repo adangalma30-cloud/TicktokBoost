@@ -173,6 +173,28 @@ fun EarnScreen(
                 Spacer(Modifier.height(10.dp))
             }
 
+            // ── permanent invite section (repeatable — never disappears) ──
+            val refStats = remember(AppState.referrals.size) { AppState.referralStats() }
+            BrandCard(onClick = onOpenReferral) {
+                Row(Modifier.padding(Dimens.card), verticalAlignment = Alignment.CenterVertically) {
+                    Text("💌", fontSize = 24.sp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Invite Friends", style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
+                        Text(
+                            "Invite more creators and earn rewards.",
+                            style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
+                        )
+                        Text(
+                            "Successful referrals: ${refStats.second} · Rewards earned: +${refStats.third} coins",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cs.primary, fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Text("→", color = cs.primary, fontWeight = FontWeight.Bold)
+                }
+            }
+
             Spacer(Modifier.height(10.dp))
             BrandCard {
                 Column(Modifier.padding(Dimens.card)) {

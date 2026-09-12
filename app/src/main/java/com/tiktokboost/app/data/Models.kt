@@ -106,6 +106,24 @@ data class ContentItem(
     val demoVisual: String? = null // emoji tile for demo creators (no external assets)
 )
 
+// ── referrals (persistent, repeatable) ──────────────────────────────────────
+
+enum class ReferralStatus { INVITED, REGISTERED, QUALIFYING, QUALIFIED, REWARDED, REJECTED }
+
+data class Referral(
+    val id: String,
+    val referrerUserId: String,      // "you" in the local demo
+    val referredUserId: String,      // unique per invited friend
+    val referredName: String,
+    val referralCode: String,
+    val status: ReferralStatus,
+    val createdAt: Long,
+    val qualifiedAt: Long? = null,
+    val rewardAmount: Int = 5,
+    val rewardTransactionId: String? = null,
+    val rewardedAt: Long? = null
+)
+
 // ── creator reports (admin review) ─────────────────────────────────────────
 
 data class Report(

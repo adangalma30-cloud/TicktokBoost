@@ -18,6 +18,10 @@ object EconomyConfig {
     const val EXCHANGE_EXPIRATION_HOURS = 24      // unconfirmed exchanges expire, no punishment
     const val CONFIRMATION_REMINDER_MINUTES = 60  // one gentle reminder per pending exchange
 
+    // ---- referrals (repeatable, anti-abuse limited) --------------------------
+    const val REFERRAL_REWARD = 5
+    const val REFERRAL_DAILY_REWARD_LIMIT = 3      // max rewarded referrals per day
+
     // ---- anti-farming ---------------------------------------------------------
     const val REPEAT_PAIR_COOLDOWN_HOURS = 24      // same two users can't farm each other
     const val BURST_WINDOW_MINUTES = 5             // rapid-action detection window

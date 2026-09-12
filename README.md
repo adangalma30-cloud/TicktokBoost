@@ -33,10 +33,29 @@ with points and featured placement.
 | `0.0.9` | Performance: R8 minified + resource-shrunk APK (7.0 → 2.2 MB), success haptics | previous |
 | `0.0.10` | Icon redesign: "Creator Rise" (6 concepts evaluated) — creator + ascending growth in the signature duotone | previous |
 | `0.0.11` | FINAL MVP: expiration, blocking/reporting, match score + For You, setup wizard, profile pictures, referral dashboard, auth hardening | previous |
-| `0.0.12` | Settings system (working theme switch + persistence), public creator profiles with photo/video content, content management | current |
+| `0.0.12` | Settings system (working theme switch + persistence), public creator profiles with photo/video content, content management | previous |
+| `0.0.13` | Referral system rebuilt: persistent per-friend records, repeatable rewards (idempotent, daily-limited), permanent Invite Friends section | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v0.0.13 (referral system + audit)
+
+Deep functionality audit result: all MVP features are implemented and persistent
+on-device via SharedPreferences/JSON (no backend by design); the referral system
+was the one genuinely fake area (a single boolean + one-time quest) — now rebuilt:
+
+- Persistent per-friend Referral records (referrer, referred user, code, status,
+  createdAt/qualifiedAt/rewardedAt, reward amount, idempotent transaction id) with
+  statuses INVITED / REGISTERED / QUALIFYING / QUALIFIED / REWARDED / REJECTED
+- Repeatable forever: invite John → reward → invite Michael → reward again
+  (verified by test)
+- Idempotent claims: a referral can never pay twice (verified by test)
+- Anti-abuse: max 3 rewarded referrals/day (verified by test)
+- Referral UI: permanent "Invite Friends" section on Earn with live stats,
+  code + copy + native share, per-friend records with claim buttons
+- Signup accepts an optional referral code and rejects your own code
+- Survives restart/logout (verified by test)
 
 ## What's new in v0.0.12 (settings + creator profiles)
 

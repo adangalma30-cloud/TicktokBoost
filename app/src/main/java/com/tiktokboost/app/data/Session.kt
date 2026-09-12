@@ -661,6 +661,67 @@ object Session {
         sp.edit().putStringSet("reminded_tx", set).apply()
     }
 
+    // ---- referrals (v0.0.13): persistent per-friend records ------------------
+
+    private fun referralJson(): org.json.JSONArray =
+        try { org.json.JSONArray(sp.getString("referrals", "[]") ?: "[]") } catch (e: Exception) { org.json.JSONArray() }
+
+    private fun referralToJson(r: Referral): org.json.JSONObject {
+        val o = org.json.JSONObject()
+        o.put("id", r.id); o.put("ref", r.referrerUserId); o.put("rec", r.referredUserId)
+        o.put("name", r.referredName); o.put("code", r.referralCode); o.put("status", r.status.name)
+        o.put("created", r.createdAt)
+        if (r.qualifiedAt != null) o.put("qualified", r.qualifiedAt)
+        o.put("amount", r.rewardAmount)
+        if (r.rewardTransactionId != null) o.put("tx", r.rewardTransactionId)
+        if (r.rewardedAt != null) o.put("rewarded", r.rewardedAt)
+        return o
+    }
+
+    fun referrals(): List<Referral> {
+        val arr = referralJson()
+        val out = mutableListOf<Referral>()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            out.add(Referral(
+                id = o.optString("id"),
+                referrerUserId = o.optString("ref"),
+                referredUserId = o.optString("rec"),
+                referredName = o.optString("name"),
+                referralCode = o.optString("code"),
+                status = runCatching { ReferralStatus.valueOf(o.optString("status")) }.getOrDefault(ReferralStatus.INVITED),
+                createdAt = o.optLong("created"),
+                qualifiedAt = if (o.has("qualified")) o.optLong("qualified") else null,
+                rewardAmount = o.optInt("amount", 5),
+                rewardTransactionId = if (o.has("tx")) o.optString("tx") else null,
+                rewardedAt = if (o.has("rewarded")) o.optLong("rewarded") else null
+            ))
+        }
+        return out.sortedByDescending { it.createdAt }
+    }
+
+    fun addReferral(r: Referral) {
+        val arr = referralJson()
+        arr.put(referralToJson(r))
+        sp.edit().putString("referrals", arr.toString()).apply()
+    }
+
+    fun updateReferral(r: Referral) {
+        val arr = referralJson()
+        for (i in 0 until arr.length()) {
+            if (arr.optJSONObject(i)?.optString("id") == r.id) {
+                arr.put(i, referralToJson(r))
+                sp.edit().putString("referrals", arr.toString()).apply()
+                return
+            }
+        }
+    }
+
+    /** Referral rewards paid today (for the daily anti-abuse limit). */
+    fun referralRewardsToday(): Int =
+        referrals().count { it.rewardedAt != null &&
+            today() == java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date(it.rewardedAt!!)) }
+
     // ---- referral counters (v0.0.11 demo) ---------------------------------------------------------------------------
 
     var referralInvited: Int

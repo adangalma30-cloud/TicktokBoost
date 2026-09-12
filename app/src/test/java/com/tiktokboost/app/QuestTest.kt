@@ -69,15 +69,10 @@ class QuestTest {
     }
 
     @Test
-    fun `referral quest requires friend qualification not just opening the screen`() {
-        val invite = Quests.byId("q_invite")!!
-        assertEquals(QuestStatus.AVAILABLE, Quests.stateOf(invite).status)
-        assertTrue(Quests.claim(invite) is EconomyResult.Failure)
-
-        Quests.onReferralQualified()
-        assertEquals(QuestStatus.READY_TO_CLAIM, Quests.stateOf(invite).status)
-        assertTrue(Quests.claim(invite) is EconomyResult.Success)
-        assertEquals(10, Session.coins)
+    fun `invite is a permanent system not a one-time quest`() {
+        // the one-time invite quest is gone; referrals are handled by the
+        // persistent referral system (see V13Test)
+        assertEquals(null, Quests.byId("q_invite"))
     }
 
     @Test

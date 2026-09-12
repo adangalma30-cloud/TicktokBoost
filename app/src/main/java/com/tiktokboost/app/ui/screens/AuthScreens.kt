@@ -128,6 +128,7 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
     var password by remember { mutableStateOf("") }
     var tiktok by remember { mutableStateOf("") }
     var showPass by remember { mutableStateOf(false) }
+    var referralCode by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
@@ -195,6 +196,13 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
+            OutlinedTextField(
+                value = referralCode,
+                onValueChange = { referralCode = it.uppercase() },
+                label = { Text("Referral code (optional)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
             error?.let {
                 Spacer(Modifier.height(10.dp))
                 Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
@@ -209,6 +217,8 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
                         error = "Please enter a valid email address."
                     !passOk(password) ->
                         error = "Password must be at least 6 characters."
+                    referralCode.trim().equals(Session.referralCode(), ignoreCase = true) && referralCode.isNotBlank() ->
+                        error = "You can't use your own referral code."
                     else -> {
                     Session.displayName = name.trim()
                     Session.email = email.trim()
@@ -220,6 +230,12 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
                         "Thanks for joining TickTokBoost — here are ${com.tiktokboost.app.data.EconomyConfig.STARTER_COINS} starter coins."
                     )
                     AppState.refresh()
+                    if (referralCode.isNotBlank() && !referralCode.trim().equals(Session.referralCode(), ignoreCase = true)) {
+                        Session.addNotification(
+                            "system", "Referral code applied.",
+                            "Your inviter earns a reward when you complete your first confirmed exchange."
+                        )
+                    }
                     onDone()
                     }
                 }

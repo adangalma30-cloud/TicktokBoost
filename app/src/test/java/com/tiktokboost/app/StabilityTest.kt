@@ -185,7 +185,7 @@ class StabilityTest {
 
         val titles = listOf(
             "Follow 3 creators", "Complete your profile",
-            "Invite a friend", "Share the app", "Daily Check-in"
+            "Share the app", "Daily Check-in"
         )
         // NOTE: width assertions are unusable under Robolectric with bundled
         // fonts (JVM glyph advances read ~1dp/char). Presence + performScrollTo
@@ -197,6 +197,9 @@ class StabilityTest {
         // a description and a status line are visible
         rule.onNodeWithText("Claim your daily bonus and continue your streak.").performScrollTo().assertExists()
         rule.onNodeWithText("Progress:", substring = true).performScrollTo().assertExists()
+        // the permanent Invite Friends section replaced the one-time invite quest
+        // (it sits below the quests, near the rules card)
+        rule.onNodeWithText("Invite Friends").performScrollTo().assertExists()
         // the rules card exists below the quests and is reachable by scrolling
         rule.onNodeWithText("Coin Earning Rules").performScrollTo().assertExists()
         rule.onNodeWithText("Opening a quest does NOT automatically award coins.").performScrollTo().assertExists()
