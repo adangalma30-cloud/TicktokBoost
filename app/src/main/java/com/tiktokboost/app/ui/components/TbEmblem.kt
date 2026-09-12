@@ -20,21 +20,21 @@ import androidx.compose.ui.unit.dp
 
 /**
  * ═════════════════════════════════════════════════════════════════════════════
- *  THE TickTokBoost brand symbol — "Motion Lock" TB emblem.
+ *  THE TickTokBoost brand symbol — "Creator Rise".
  *
- *  The T's rising crossbar shares its stem with the B's spine: the two letters
- *  lock into ONE emblem. Rendered in the signature duotone (cyan ghost offset
- *  up-left, pink ghost down-right, solid white face).
+ *  A creator (head + shoulders) beside three ascending growth bars: the
+ *  product story in one silhouette. Rendered in the signature duotone
+ *  (cyan ghost offset up-left, pink ghost down-right, solid white face).
  *
  *  This is the SINGLE brand asset: the launcher icon (adaptive foreground),
  *  the splash animation and every in-app LogoMark draw this exact geometry.
- *  Coordinates mirror tools_tbemblem.py (CONCEPT A) — keep both in sync.
+ *  Coordinates mirror tools_iconconcepts.py (CONCEPT 2, winner) — keep in sync.
  * ═════════════════════════════════════════════════════════════════════════════
  */
 object TbEmblemGeometry {
-    /** 108-unit icon viewport. Emblem optical center = (55, 54). */
-    const val CENTER_X = 55f
-    const val CENTER_Y = 54f
+    /** 108-unit icon viewport. Emblem optical center = (56.5, 52.75). */
+    const val CENTER_X = 56.5f
+    const val CENTER_Y = 52.75f
     const val GHOST = 3f          // duotone offset in viewport units
 
     val BrandCyan = Color(0xFF25F4EE)
@@ -43,16 +43,14 @@ object TbEmblemGeometry {
 
     fun build(): Path = Path().apply {
         fillType = PathFillType.EvenOdd
-        // rising T crossbar
-        moveTo(27f, 32f); lineTo(77f, 29f); lineTo(77f, 37f); lineTo(27f, 40f); close()
-        // shared spine (T stem = B spine)
-        addRect(Rect(48f, 29f, 56f, 79f))
-        // B top bowl (outer + counter)
-        addRoundRect(RoundRect(56f, 36f, 81f, 57f, CornerRadius(10f)))
-        addRoundRect(RoundRect(63f, 41f, 74f, 52f, CornerRadius(5f)))
-        // B bottom bowl (outer + counter)
-        addRoundRect(RoundRect(56f, 57f, 83f, 79f, CornerRadius(11f)))
-        addRoundRect(RoundRect(63f, 62f, 76f, 74f, CornerRadius(5.5f)))
+        // creator head
+        addOval(Rect(26.5f, 26.5f, 47.5f, 47.5f))
+        // creator shoulders
+        addRoundRect(RoundRect(22f, 52f, 52f, 79f, CornerRadius(11f)))
+        // three ascending growth bars
+        addRoundRect(RoundRect(58f, 57f, 67f, 79f, CornerRadius(4.5f)))
+        addRoundRect(RoundRect(70f, 45f, 79f, 79f, CornerRadius(4.5f)))
+        addRoundRect(RoundRect(82f, 32f, 91f, 79f, CornerRadius(4.5f)))
     }
 }
 

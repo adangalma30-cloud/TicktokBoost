@@ -30,10 +30,24 @@ with points and featured placement.
 | `0.0.6` | Earn screen fix: quest cards rebuilt (titles/descriptions/rewards visible), rules card, scroll polish | previous |
 | `0.0.7` | Launcher icon: "TB" monogram, TikTok-style cyan/pink duotone on near-black | previous |
 | `0.0.8` | Brand redesign: "Motion Lock" TB emblem (4 concepts evaluated), rebuilt splash animation, single brand asset | previous |
-| `0.0.9` | Performance: R8 minified + resource-shrunk APK (7.0 → 2.2 MB), success haptics | current |
+| `0.0.9` | Performance: R8 minified + resource-shrunk APK (7.0 → 2.2 MB), success haptics | previous |
+| `0.0.10` | Icon redesign: "Creator Rise" (6 concepts evaluated) — creator + ascending growth in the signature duotone | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v0.0.10 (icon redesign)
+
+- Six original icon concepts designed & measured at 48px (playrise, creator rise,
+  double-play TB, ascending network, boost spark, ascent play). Winner:
+  **"Creator Rise"** — a creator beside three ascending growth bars: the product
+  story in one silhouette, and the boldest small-size presence of the set.
+- One brand asset: identical geometry ships as the adaptive launcher icon
+  (foreground + near-black background + monochrome), legacy PNGs (mdpi–xxxhdpi),
+  and `TbEmblem.kt` — so splash, Home, Welcome, auth and Settings show the exact
+  same symbol. Generator: `tools_iconconcepts.py`; concepts in `art/iconconcepts/`.
+- Centering pixel-verified (512px & 48px); launcher-mask safe; monochrome-safe.
+- No functional changes. versionCode 10.
 
 ## What's new in v0.0.9 (performance & polish)
 
