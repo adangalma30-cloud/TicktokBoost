@@ -2,6 +2,8 @@ package com.tiktokboost.app.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
+import com.tiktokboost.app.ui.theme.GoodGreen
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,7 +38,11 @@ import com.tiktokboost.app.ui.AppState
 import com.tiktokboost.app.ui.components.BrandButton
 import com.tiktokboost.app.ui.components.BrandCard
 import com.tiktokboost.app.ui.components.Dimens
+import com.tiktokboost.app.ui.components.ProfileAvatar
 import com.tiktokboost.app.ui.components.GradientAvatar
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import java.io.File
 import com.tiktokboost.app.ui.components.PremiumBadge
 import com.tiktokboost.app.ui.components.ProfileCompletionBar
 import com.tiktokboost.app.ui.components.SecondaryButton
@@ -55,6 +61,17 @@ fun ProfileScreen(
     onAnalytics: () -> Unit
 ) {
     val context = LocalContext.current
+    val picturePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        try {
+            val out = File(context.filesDir, "profile.jpg")
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                out.outputStream().use { input.copyTo(it) }
+            }
+            Session.profilePicturePath = out.absolutePath
+            AppState.refresh()
+        } catch (e: Exception) { /* keep initials avatar */ }
+    }
     var name by remember { mutableStateOf(AppState.displayName) }
     var tiktok by remember { mutableStateOf(AppState.tiktokUsername) }
     var bio by remember { mutableStateOf(AppState.bio) }
@@ -74,7 +91,24 @@ fun ProfileScreen(
 
             // ── header ─────────────────────────────────────────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
-                GradientAvatar(AppState.displayName.ifBlank { "T" }, 0, 68.dp)
+                androidx.compose.foundation.layout.Box {
+                    ProfileAvatar(AppState.displayName.ifBlank { "T" }, 0, 68.dp)
+                    androidx.compose.material3.Surface(
+                        onClick = { picturePicker.launch("image/*") },
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                        color = cs.primary,
+                        modifier = Modifier
+                            .size(22.dp)
+                            .align(Alignment.BottomEnd)
+                    ) {
+                        androidx.compose.material3.Text(
+                            "✎",
+                            color = androidx.compose.ui.graphics.Color.Black,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(2.dp)
+                        )
+                    }
+                }
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -167,6 +201,15 @@ fun ProfileScreen(
                     Text(
                         "Account age: ${Session.accountAgeDays()} days · suspicious flags: ${Session.suspiciousFlags}",
                         style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
+                    )
+                    Text(
+                        "Account risk: ${AppState.riskLevel().label}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = when (AppState.riskLevel()) {
+                            com.tiktokboost.app.data.RiskLevel.LOW -> GoodGreen
+                            com.tiktokboost.app.data.RiskLevel.MEDIUM -> androidx.compose.ui.graphics.Color(0xFFFFB020)
+                            com.tiktokboost.app.data.RiskLevel.HIGH -> androidx.compose.ui.graphics.Color(0xFFFF5A6E)
+                        }
                     )
                 }
             }

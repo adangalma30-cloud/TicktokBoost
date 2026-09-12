@@ -33,10 +33,15 @@ import com.tiktokboost.app.ui.components.AppTopBar
 import com.tiktokboost.app.ui.components.BrandButton
 import com.tiktokboost.app.ui.components.LogoMark
 
+private val emailOk: (String) -> Boolean = { it.contains("@") && it.contains(".") && it.length > 4 }
+private val passOk: (String) -> Boolean = { it.length >= 6 }
+
 @Composable
 fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showPass by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -78,14 +83,30 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
                 onValueChange = { password = it },
                 label = { Text("Password") },
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (showPass) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    androidx.compose.material3.TextButton(onClick = { showPass = !showPass }) {
+                        Text(if (showPass) "Hide" else "Show", style = MaterialTheme.typography.labelMedium)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
+            error?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+            }
             Spacer(Modifier.height(22.dp))
             BrandButton("Log in") {
-                Session.isLoggedIn = true
-                AppState.refresh()
-                onDone()
+                if (!emailOk(email)) {
+                    error = "Please enter a valid email address."
+                } else if (!passOk(password)) {
+                    error = "Password must be at least 6 characters."
+                } else {
+                    error = null
+                    Session.isLoggedIn = true
+                    AppState.refresh()
+                    onDone()
+                }
             }
             Spacer(Modifier.height(12.dp))
             Text(
@@ -106,6 +127,7 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var tiktok by remember { mutableStateOf("") }
+    var showPass by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
@@ -154,9 +176,14 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = { Text("Password (min 6 characters)") },
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (showPass) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    androidx.compose.material3.TextButton(onClick = { showPass = !showPass }) {
+                        Text(if (showPass) "Hide" else "Show", style = MaterialTheme.typography.labelMedium)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(12.dp))
@@ -175,9 +202,14 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
             Spacer(Modifier.height(18.dp))
             BrandButton("Create Account") {
                 val handle = tiktok.trim().removePrefix("@")
-                if (name.isBlank() || email.isBlank() || password.isBlank() || handle.isBlank()) {
-                    error = "Please fill in all fields."
-                } else {
+                when {
+                    name.isBlank() || email.isBlank() || password.isBlank() || handle.isBlank() ->
+                        error = "Please fill in all fields."
+                    !emailOk(email) ->
+                        error = "Please enter a valid email address."
+                    !passOk(password) ->
+                        error = "Password must be at least 6 characters."
+                    else -> {
                     Session.displayName = name.trim()
                     Session.email = email.trim()
                     Session.tiktokUsername = handle
@@ -189,6 +221,7 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
                     )
                     AppState.refresh()
                     onDone()
+                    }
                 }
             }
             Spacer(Modifier.height(10.dp))

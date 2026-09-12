@@ -35,7 +35,8 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onSignOut: () -> Unit,
     onAdmin: () -> Unit,
-    onPremium: () -> Unit
+    onPremium: () -> Unit,
+    onBlocked: () -> Unit
 ) {
     val cs = MaterialTheme.colorScheme
     Scaffold(
@@ -138,6 +139,21 @@ fun SettingsScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            // ── blocked users ───────────────────────────────────────────
+            BrandCard(onClick = onBlocked) {
+                Row(Modifier.padding(Dimens.card), verticalAlignment = Alignment.CenterVertically) {
+                    Text("🚫", fontSize = 20.sp)
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Blocked users", style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
+                        Text("Manage creators you've blocked", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                    }
+                    Text("→", color = cs.primary, fontWeight = FontWeight.Bold)
                 }
             }
 

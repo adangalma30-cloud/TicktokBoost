@@ -515,6 +515,78 @@ object Session {
         sp.edit().putString("last_checkin", today()).apply()
     }
 
+    // ---- profile picture (v0.0.11) --------------------------------------------------------------------------------
+
+    var profilePicturePath: String?
+        get() = sp.getString("profile_picture", null)
+        set(value) { if (value == null) sp.edit().remove("profile_picture").apply() else sp.edit().putString("profile_picture", value).apply() }
+
+    // ---- blocked creators (v0.0.11) -------------------------------------------------------------------------------
+
+    private fun blockedSet(): MutableSet<String> =
+        (sp.getStringSet("blocked_creators", mutableSetOf()) ?: mutableSetOf()).toMutableSet()
+
+    fun isBlocked(userId: String): Boolean = userId in blockedSet()
+
+    fun toggleBlock(userId: String): Boolean {
+        val set = blockedSet()
+        val nowBlocked = userId !in set
+        if (nowBlocked) set.add(userId) else set.remove(userId)
+        sp.edit().putStringSet("blocked_creators", set).apply()
+        return nowBlocked
+    }
+
+    fun blockedIds(): List<String> = blockedSet().toList()
+
+    // ---- creator reports (v0.0.11) ---------------------------------------------------------------------------------
+
+    fun addReport(targetUsername: String, reason: String) {
+        val arr = try { JSONArray(sp.getString("reports", "[]") ?: "[]") } catch (e: Exception) { JSONArray() }
+        val o = JSONObject()
+        val now = System.currentTimeMillis()
+        o.put("id", "r_$now"); o.put("target", targetUsername)
+        o.put("reason", reason); o.put("ts", now); o.put("resolved", false)
+        arr.put(o)
+        sp.edit().putString("reports", arr.toString()).apply()
+    }
+
+    fun reports(): List<com.tiktokboost.app.data.Report> {
+        val arr = try { JSONArray(sp.getString("reports", "[]") ?: "[]") } catch (e: Exception) { JSONArray() }
+        val out = mutableListOf<com.tiktokboost.app.data.Report>()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            out.add(com.tiktokboost.app.data.Report(o.optString("id"), o.optString("target"), o.optString("reason"), o.optLong("ts"), o.optBoolean("resolved")))
+        }
+        return out.sortedByDescending { it.createdAt }
+    }
+
+    fun resolveReport(id: String) {
+        val arr = try { JSONArray(sp.getString("reports", "[]") ?: "[]") } catch (e: Exception) { JSONArray() }
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            if (o.optString("id") == id) { o.put("resolved", true); arr.put(i, o) }
+        }
+        sp.edit().putString("reports", arr.toString()).apply()
+    }
+
+    // ---- confirmation reminders (v0.0.11) — one per transaction, never spam ------------------------------------------
+
+    private fun remindedSet(): MutableSet<String> =
+        (sp.getStringSet("reminded_tx", mutableSetOf()) ?: mutableSetOf()).toMutableSet()
+
+    fun wasReminded(txId: String): Boolean = txId in remindedSet()
+
+    fun markReminded(txId: String) {
+        val set = remindedSet(); set.add(txId)
+        sp.edit().putStringSet("reminded_tx", set).apply()
+    }
+
+    // ---- referral counters (v0.0.11 demo) ---------------------------------------------------------------------------
+
+    var referralInvited: Int
+        get() = sp.getInt("referral_invited", 0)
+        set(value) { sp.edit().putInt("referral_invited", value).apply() }
+
     // ---- quests (v0.0.4) -----------------------------------------------------------------------------------------
 
     private const val QUESTS_KEY = "quest_states"

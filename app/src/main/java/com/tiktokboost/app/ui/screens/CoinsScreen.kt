@@ -220,15 +220,6 @@ fun CoinsScreen(onEarn: () -> Unit) {
                 else "Not enough coins — earn more!"
             }
         )
-        Spacer(Modifier.height(8.dp))
-        StoreItem(
-            icon = "💎",
-            title = "Coin packs",
-            desc = "Buying coins is coming in a later version",
-            price = 0,
-            enabled = false,
-            onBuy = {}
-        )
 
         msg.takeIf { it.isNotBlank() }?.let {
             Spacer(Modifier.height(10.dp))

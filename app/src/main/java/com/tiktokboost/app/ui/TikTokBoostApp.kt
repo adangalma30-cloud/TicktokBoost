@@ -42,7 +42,9 @@ import com.tiktokboost.app.ui.screens.HistoryScreen
 import com.tiktokboost.app.ui.screens.HomeScreen
 import com.tiktokboost.app.ui.screens.LoginScreen
 import com.tiktokboost.app.ui.screens.NotificationsScreen
+import com.tiktokboost.app.ui.screens.BlockedUsersScreen
 import com.tiktokboost.app.ui.screens.OnboardingScreen
+import com.tiktokboost.app.ui.screens.SetupScreen
 import com.tiktokboost.app.ui.screens.PremiumScreen
 import com.tiktokboost.app.ui.screens.ReferralScreen
 import com.tiktokboost.app.ui.screens.ProfileScreen
@@ -68,6 +70,8 @@ object Routes {
     const val ANALYTICS = "analytics"
     const val ADMIN = "admin"
     const val REFERRAL = "referral"
+    const val SETUP = "setup"
+    const val BLOCKED = "blocked"
 
     val bottomTabs = listOf(HOME, DISCOVER, EARN, BOOST, PROFILE)
 }
@@ -158,8 +162,17 @@ fun TikTokBoostApp() {
             }
             composable(Routes.SIGNUP) {
                 SignupScreen(
-                    onDone = { navController.navigate(Routes.HOME) { popUpTo(Routes.SIGNUP) { inclusive = true } } },
+                    onDone = {
+                        navController.navigate(Routes.SETUP) { popUpTo(Routes.SIGNUP) { inclusive = true } }
+                    },
                     onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Routes.SETUP) {
+                SetupScreen(
+                    onFinish = {
+                        navController.navigate(Routes.HOME) { popUpTo(Routes.SETUP) { inclusive = true } }
+                    }
                 )
             }
             composable(Routes.LOGIN) {
@@ -227,12 +240,16 @@ fun TikTokBoostApp() {
             composable(Routes.REFERRAL) {
                 ReferralScreen(onBack = { navController.popBackStack() })
             }
+            composable(Routes.BLOCKED) {
+                BlockedUsersScreen(onBack = { navController.popBackStack() })
+            }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
                     onSignOut = { navController.navigate(Routes.ONBOARDING) { popUpTo(0) { inclusive = true } } },
                     onAdmin = { navController.navigate(Routes.ADMIN) },
-                    onPremium = { navController.navigate(Routes.PREMIUM) }
+                    onPremium = { navController.navigate(Routes.PREMIUM) },
+                    onBlocked = { navController.navigate(Routes.BLOCKED) }
                 )
             }
         }

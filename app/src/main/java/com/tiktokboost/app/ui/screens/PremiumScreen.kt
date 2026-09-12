@@ -147,7 +147,7 @@ fun PremiumScreen(onBack: () -> Unit) {
                     ComparisonRow("Priority Discovery", false, true, true)
                     ComparisonRow("Advanced Analytics", false, true, true)
                     ComparisonRow("Premium Badge", false, true, true)
-                    ComparisonRow("Advanced Filters", false, true, true)
+                    ComparisonRow("Premium daily bonus", false, true, true)
                     ComparisonRow("Premium Customization", false, true, true)
                     ComparisonRow("Pro Analytics", false, false, true)
                     ComparisonRow("Higher Boost Limits", false, false, true)

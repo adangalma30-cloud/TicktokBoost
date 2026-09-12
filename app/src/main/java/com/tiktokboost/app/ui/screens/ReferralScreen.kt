@@ -3,7 +3,9 @@ package com.tiktokboost.app.ui.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -89,12 +91,33 @@ fun ReferralScreen(onBack: () -> Unit) {
                         })
                         Spacer(Modifier.width(8.dp))
                         BrandButton("Share", modifier = Modifier.weight(1f), onClick = {
+                            Session.referralInvited = Session.referralInvited + 1
                             openShareSheet(context)
                         })
                     }
                     if (copied) {
                         Spacer(Modifier.height(8.dp))
                         Text("Link copied ✓", style = MaterialTheme.typography.labelMedium, color = cs.primary, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            // referral dashboard
+            val invited = Session.referralInvited
+            val joined = if (Session.referralQualified) 1 else 0
+            val qualified = joined
+            val rewarded = if (com.tiktokboost.app.data.Quests.stateOf(
+                    com.tiktokboost.app.data.Quests.byId("q_invite")!!).status ==
+                    com.tiktokboost.app.data.QuestStatus.COMPLETED) 1 else 0
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("Invited" to invited, "Joined" to joined, "Qualified" to qualified, "Rewarded" to rewarded).forEach { (label, v) ->
+                    BrandCard(Modifier.weight(1f)) {
+                        Column(Modifier.padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("$v", style = MaterialTheme.typography.titleLarge, color = cs.primary, fontWeight = FontWeight.ExtraBold)
+                            Text(label, style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
+                        }
                     }
                 }
             }

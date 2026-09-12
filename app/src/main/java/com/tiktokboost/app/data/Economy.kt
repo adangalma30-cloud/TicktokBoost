@@ -15,6 +15,8 @@ object EconomyConfig {
     const val COINS_PER_FOLLOW_BACK = 3
     const val DAILY_EARNING_CAP = 25
     const val EXCHANGE_COOLDOWN_MINUTES = 10
+    const val EXCHANGE_EXPIRATION_HOURS = 24      // unconfirmed exchanges expire, no punishment
+    const val CONFIRMATION_REMINDER_MINUTES = 60  // one gentle reminder per pending exchange
 
     // ---- anti-farming ---------------------------------------------------------
     const val REPEAT_PAIR_COOLDOWN_HOURS = 24      // same two users can't farm each other

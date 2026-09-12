@@ -98,7 +98,7 @@ object MockData {
 
     private fun bio2() = "Finding joy in joining niche jams 'n rocking every single one — invitations inbox always open, come on in! ✨"
 
-    val filters = listOf("Recommended", "New", "Trusted", "Most Active")
+    val filters = listOf("For You", "Recommended", "New", "Trusted", "Most Active")
 
     /** Filter → list, before ranking & search. */
     fun applyFilter(users: List<User>, filter: String): List<User> = when (filter) {

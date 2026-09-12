@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -229,11 +230,75 @@ fun HomeScreen(
             Column {
                 BrandButton("Discover Creators", icon = Icons.Filled.Search, onClick = onOpenDiscover)
                 Spacer(Modifier.height(8.dp))
-                SecondaryButton("Boost My Profile", icon = Icons.Filled.Done, onClick = onOpenBoost)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SecondaryButton("Earn Coins", icon = Icons.Filled.Star, modifier = Modifier.weight(1f), onClick = onOpenEarn)
+                    SecondaryButton("Boost Profile", icon = Icons.Filled.Done, modifier = Modifier.weight(1f), onClick = onOpenBoost)
+                }
             }
         }
 
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(14.dp))
+
+        // ── pending confirmations ─────────────────────────────────────
+        val pendingCount = AppState.transactions.count {
+            it.status == com.tiktokboost.app.data.TxStatus.PENDING || it.status == com.tiktokboost.app.data.TxStatus.DISPUTED
+        }
+        if (pendingCount > 0) {
+            StaggeredAppear(2) {
+                BrandCard(onClick = onOpenHistory) {
+                    Row(Modifier.padding(Dimens.card), verticalAlignment = Alignment.CenterVertically) {
+                        Text("⏳", fontSize = 20.sp)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "$pendingCount exchange${if (pendingCount == 1) "" else "s"} awaiting confirmation",
+                                style = MaterialTheme.typography.titleSmall, color = cs.onSurface
+                            )
+                            Text("Track progress in your history", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                        }
+                        Text("→", color = cs.primary, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+        }
+
+        // ── recommended creators strip ────────────────────────────────
+        val recommended = remember(AppState.transactions.size) {
+            com.tiktokboost.app.ui.AppState.rankedCreators("", "For You", null).take(5)
+        }
+        if (recommended.isNotEmpty()) {
+            StaggeredAppear(3) {
+                Column {
+                    Text("Recommended for you", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+                    Spacer(Modifier.height(8.dp))
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(recommended.size) { i ->
+                            val u = recommended[i]
+                            BrandCard(onClick = onOpenDiscover) {
+                                Column(
+                                    Modifier.padding(12.dp).width(116.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    com.tiktokboost.app.ui.components.GradientAvatar(u.displayName, u.hueSeed, 44.dp)
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(
+                                        u.displayName,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = cs.onSurface,
+                                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                    com.tiktokboost.app.ui.components.MatchChip(percent = com.tiktokboost.app.ui.AppState.matchScore(u))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+        }
 
         // ── premium strip (tasteful) ────────────────────────────────────
         if (AppState.premium == com.tiktokboost.app.data.PremiumTier.FREE) {

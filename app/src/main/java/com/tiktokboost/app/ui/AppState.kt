@@ -121,13 +121,38 @@ object AppState {
         disputes.clear()
         disputes.addAll(Session.disputes())
         unreadCount = notifications.count { !it.read }
-        // catch up on demo confirmations due while the app was closed
+        // catch up: demo confirmations, expiration, and gentle one-shot reminders
+        val now = System.currentTimeMillis()
+        val expireMs = EconomyConfig.EXCHANGE_EXPIRATION_HOURS * 3_600_000L
+        val remindMs = EconomyConfig.CONFIRMATION_REMINDER_MINUTES * 60_000L
         Session.pendingTransactions().forEach { tx ->
-            val age = System.currentTimeMillis() - tx.createdAt
-            if (age > MockData.DEMO_CONFIRM_DELAY + 4_000) {
-                resolveVerified(tx, notify = true)
+            val age = now - tx.createdAt
+            when {
+                age > expireMs -> {
+                    // unconfirmed exchanges expire quietly — nobody is punished,
+                    // and the creator becomes available for a fresh attempt
+                    Session.updateTransaction(tx.copy(status = TxStatus.EXPIRED, updatedAt = now))
+                    tx.userId?.let { Session.setFollowStatus(it, "expired") }
+                    Session.addNotification(
+                        "exchange", "Exchange expired",
+                        "Your exchange with @${tx.username} wasn't confirmed in time. No action was taken — you can try again later."
+                    )
+                }
+                age > MockData.DEMO_CONFIRM_DELAY + 4_000 -> resolveVerified(tx, notify = true)
+                age > remindMs && !Session.wasReminded(tx.id) -> {
+                    Session.markReminded(tx.id)
+                    val who = tx.username.substringBefore('.').replaceFirstChar { it.uppercase() }
+                    Session.addNotification(
+                        "exchange", "$who is waiting for your confirmation.",
+                        "Confirm the completed exchange so coins can be released."
+                    )
+                }
             }
         }
+        // refresh collections once more if anything above mutated
+        transactions.clear(); transactions.addAll(Session.transactions())
+        notifications.clear(); notifications.addAll(Session.notifications())
+        unreadCount = notifications.count { !it.read }
     }
 
     private fun refreshTrust() {
@@ -141,21 +166,64 @@ object AppState {
         )
     }
 
-    /** Profile completion: name, handle, bio, category, external link — 20% each. */
+    /** Profile completion: name 15 · handle/external 25 · bio 20 · category 20 · picture 20. */
     fun computeProfileCompleteness(): Int {
         var score = 0
-        if (Session.displayName.isNotBlank()) score += 20
-        if (Session.tiktokUsername.isNotBlank()) score += 20
+        if (Session.displayName.isNotBlank()) score += 15
+        if (Session.tiktokUsername.isNotBlank()) score += 25  // external profile derives from handle
         if (Session.bio.isNotBlank()) score += 20
         if (Session.category.isNotBlank()) score += 20
-        if (Session.tiktokUsername.isNotBlank()) score += 20  // external profile derives from handle
+        if (Session.profilePicturePath != null) score += 20
         return score.coerceAtMost(100)
     }
+
+    /** TickTokBoost match score (0-99): a recommendation heuristic, not a prediction. */
+    fun matchScore(u: com.tiktokboost.app.data.User): Int {
+        var s = 0f
+        val myCat = Session.category
+        if (myCat.isNotBlank() && u.category == myCat) s += 45f
+        s += u.trustScore * 0.20f
+        s += u.activityScore * 0.15f
+        s += u.profileCompleteness * 0.10f
+        if (u.lastActiveMinutesAgo <= 30) s += 10f
+        if (followStatus(u.id) != null || !com.tiktokboost.app.data.EconomyService.canPairWith(u.id)) s -= 25f
+        return s.toInt().coerceIn(5, 99)
+    }
+
+    /** Overall account risk for admin/review surfaces. */
+    fun riskLevel(): com.tiktokboost.app.data.RiskLevel {
+        var risk = when (abuse) {
+            AbuseStatus.NORMAL -> com.tiktokboost.app.data.RiskLevel.LOW
+            AbuseStatus.WARNING -> com.tiktokboost.app.data.RiskLevel.MEDIUM
+            else -> com.tiktokboost.app.data.RiskLevel.HIGH
+        }
+        if (Session.suspiciousFlags >= 2 && risk == com.tiktokboost.app.data.RiskLevel.LOW) risk = com.tiktokboost.app.data.RiskLevel.MEDIUM
+        if (Session.suspiciousFlags >= 4) risk = com.tiktokboost.app.data.RiskLevel.HIGH
+        return risk
+    }
+
+    fun isBlocked(userId: String): Boolean = Session.isBlocked(userId)
+
+    fun toggleBlock(userId: String): Boolean = Session.toggleBlock(userId)
 
     // ── discovery ranking ─────────────────────────────────────────────
 
     fun rankedCreators(query: String, filter: String, category: String?): List<User> {
-        val base = MockData.applyFilter(MockData.users, filter)
+        val blocked = Session.blockedIds().toSet()
+        val pool = MockData.users.filter { it.id !in blocked }
+        val base = if (filter == "For You") pool else MockData.applyFilter(pool, filter)
+
+        // "For You": pure match-score ordering (TickTokBoost recommendation)
+        if (filter == "For You") {
+            return base.map { it to matchScore(it) }
+                .sortedByDescending { it.second }
+                .map { it.first }
+                .filter { u ->
+                    query.isBlank() || u.username.contains(query.trim().removePrefix("@"), true) ||
+                        u.displayName.contains(query, true) || u.category.contains(query, true)
+                }
+                .also { it.take(10).forEach { u -> Session.markSeen(u.id) } }
+        }
 
         val scored = base
             .filter { u ->
@@ -195,6 +263,7 @@ object AppState {
 
     /** All gates: restriction, cooldown, pairing, cap, duplicate. */
     fun exchangeBlockReason(user: User): FailureReason? {
+        if (Session.isBlocked(user.id)) return FailureReason.ALREADY_EXCHANGED
         if (EconomyService.currentlyRestricted()) return FailureReason.RESTRICTED
         if (followStatus(user.id) != null) return null // already in a relationship state
         if (EconomyService.cooldownRemaining(myTrustLevel, premium) > 0) return FailureReason.COOLDOWN_ACTIVE

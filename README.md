@@ -31,10 +31,31 @@ with points and featured placement.
 | `0.0.7` | Launcher icon: "TB" monogram, TikTok-style cyan/pink duotone on near-black | previous |
 | `0.0.8` | Brand redesign: "Motion Lock" TB emblem (4 concepts evaluated), rebuilt splash animation, single brand asset | previous |
 | `0.0.9` | Performance: R8 minified + resource-shrunk APK (7.0 → 2.2 MB), success haptics | previous |
-| `0.0.10` | Icon redesign: "Creator Rise" (6 concepts evaluated) — creator + ascending growth in the signature duotone | current |
+| `0.0.10` | Icon redesign: "Creator Rise" (6 concepts evaluated) — creator + ascending growth in the signature duotone | previous |
+| `0.0.11` | FINAL MVP: expiration, blocking/reporting, match score + For You, setup wizard, profile pictures, referral dashboard, auth hardening | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v0.0.11 (final MVP completion)
+
+- Exchange lifecycle completed: unconfirmed exchanges EXPIRE after 24h (config) with no
+  punishment and the pairing frees up; one gentle confirmation reminder per exchange.
+- Safety: long-press a creator card to Block or Report (6 reasons); blocked creators leave
+  discovery and can't be exchanged with; Settings → Blocked users; reports land in the
+  admin moderation queue.
+- Discovery: "For You" feed ranked by the new TickTokBoost match score (shared category,
+  activity, trust, completeness, availability — a recommendation, not a prediction) with
+  🔥 % Match chips on cards; category filters are now free for everyone.
+- Onboarding: post-signup setup wizard (avatar → TikTok handle → category → bio) with
+  progress, skippable optional steps; real profile pictures via the system image picker.
+- Home dashboard: pending-confirmations card, "Recommended for you" strip, three quick
+  actions (Discover / Earn / Boost).
+- Referrals: dashboard with Invited / Joined / Qualified / Rewarded tiles.
+- Auth: password visibility toggles, email + password validation with friendly errors.
+- Profile: picture picker, account risk level (Low/Medium/High) beside trust stats.
+- Admin: reports queue, risk + referral metrics. Removed the coin-packs "Soon" placeholder.
+- Tests: expiration, blocking, matching, reporting regressions (MvpTest 4/4).
 
 ## What's new in v0.0.10 (icon redesign)
 

@@ -20,6 +20,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -71,6 +72,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -253,16 +255,18 @@ fun GradientButton(text: String, modifier: Modifier = Modifier, enabled: Boolean
 
 // ═══════════════════════════════ cards ═══════════════════════════════
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun BrandCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     val cs = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(Dimens.cornerCard)
     val base = modifier.clip(shape).background(cs.surface)
-    if (onClick == null) {
+    if (onClick == null && onLongClick == null) {
         Box(base) { content() }
     } else {
         val interaction = remember { MutableInteractionSource() }
@@ -270,10 +274,11 @@ fun BrandCard(
         Box(
             base
                 .graphicsLayer { scaleX = scale; scaleY = scale }
-                .clickable(
+                .combinedClickable(
                     interactionSource = interaction,
                     indication = androidx.compose.material.ripple.rememberRipple(),
-                    onClick = onClick
+                    onClick = { onClick?.invoke() },
+                    onLongClick = onLongClick
                 )
         ) { content() }
     }
@@ -416,6 +421,7 @@ fun statusColor(status: TxStatus): Color = when (status) {
     TxStatus.VERIFIED -> Color(0xFF2ECC71)
     TxStatus.DISPUTED -> Color(0xFFFF5A6E)
     TxStatus.COMPLETED -> Color(0xFF3E8BFF)
+    TxStatus.EXPIRED -> Color(0xFF8E99B4)
 }
 
 fun statusLabel(status: TxStatus): String = when (status) {
@@ -423,6 +429,7 @@ fun statusLabel(status: TxStatus): String = when (status) {
     TxStatus.VERIFIED -> "Verified"
     TxStatus.DISPUTED -> "Disputed"
     TxStatus.COMPLETED -> "Done"
+    TxStatus.EXPIRED -> "Expired"
 }
 
 fun statusHint(status: TxStatus): String = when (status) {
@@ -430,6 +437,7 @@ fun statusHint(status: TxStatus): String = when (status) {
     TxStatus.VERIFIED -> "Verified — Coins released"
     TxStatus.DISPUTED -> "Under review"
     TxStatus.COMPLETED -> "Completed"
+    TxStatus.EXPIRED -> "Expired — no action taken"
 }
 
 @Composable
@@ -447,6 +455,7 @@ fun StatusBadge(status: TxStatus, modifier: Modifier = Modifier) {
             TxStatus.VERIFIED -> Icons.Filled.CheckCircle
             TxStatus.DISPUTED -> Icons.Filled.Warning
             TxStatus.COMPLETED -> Icons.Filled.Done
+            TxStatus.EXPIRED -> Icons.Filled.Info
         }
         if (status == TxStatus.PENDING) {
             Icon(painterResource(R.drawable.ic_clock), null, tint = color, modifier = Modifier.size(13.dp))
@@ -578,6 +587,50 @@ private val palettes = listOf(
     listOf(Color(0xFF3D6BFF), Color(0xFF00E0C6)),
     listOf(Color(0xFFFF5FA2), Color(0xFF6A3BFF))
 )
+
+/** Avatar showing the user's chosen profile picture (or initials fallback). */
+@Composable
+fun ProfileAvatar(name: String, seed: Int, size: Dp) {
+    val path = com.tiktokboost.app.data.Session.profilePicturePath
+    val file = remember(path) { path?.let { java.io.File(it) } }
+    if (file != null && file.exists()) {
+        val bmp = remember(path) {
+            android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+        }
+        if (bmp != null) {
+            androidx.compose.foundation.Image(
+                bitmap = bmp.asImageBitmap(),
+                contentDescription = "Profile picture",
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.size(size).clip(CircleShape)
+            )
+            return
+        }
+    }
+    GradientAvatar(name, seed, size)
+}
+
+/** 🔥 92% Match — TickTokBoost recommendation score (not a prediction). */
+@Composable
+fun MatchChip(percent: Int, modifier: Modifier = Modifier) {
+    Row(
+        modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("🔥", fontSize = 10.sp)
+        Spacer(Modifier.width(3.dp))
+        Text(
+            "$percent% Match",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1, softWrap = false
+        )
+    }
+}
 
 @Composable
 fun GradientAvatar(name: String, seed: Int, size: Dp) {

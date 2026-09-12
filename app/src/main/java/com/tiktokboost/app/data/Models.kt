@@ -35,7 +35,7 @@ data class User(
     val profileCompleteness: Int = 60
 )
 
-enum class TxStatus { PENDING, VERIFIED, DISPUTED, COMPLETED }
+enum class TxStatus { PENDING, VERIFIED, DISPUTED, COMPLETED, EXPIRED }
 
 enum class TxType { FOLLOW, FOLLOW_BACK, BONUS, PURCHASE, BOOST, PREMIUM, STREAK, ACHIEVEMENT }
 
@@ -91,6 +91,18 @@ data class DisputeRecord(
     val reason: String,
     val status: DisputeStatus
 )
+
+// ── creator reports (admin review) ─────────────────────────────────────────
+
+data class Report(
+    val id: String,
+    val targetUsername: String,
+    val reason: String,
+    val createdAt: Long,
+    val resolved: Boolean = false
+)
+
+enum class RiskLevel(val label: String) { LOW("Low"), MEDIUM("Medium"), HIGH("High") }
 
 // ── achievements (cosmetic-first) ────────────────────────────────────────
 

@@ -23,7 +23,11 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -150,19 +154,10 @@ fun ExchangeScreen(onOpenPremium: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(EconomyConfig.categories) { c ->
-                val locked = AppState.premium == PremiumTier.FREE
                 FilterChip(
                     selected = category == c,
-                    onClick = { if (locked) onOpenPremium() else category = if (category == c) null else c },
-                    label = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (locked) {
-                                Icon(Icons.Filled.Lock, null, Modifier.size(11.dp))
-                                Spacer(Modifier.width(4.dp))
-                            }
-                            Text(c)
-                        }
-                    },
+                    onClick = { category = if (category == c) null else c },
+                    label = { Text(c) },
                     colors = chipColors()
                 )
             }
@@ -242,14 +237,59 @@ private fun SkeletonCreatorCard() {
     }
 }
 
+private val reportReasons = listOf("Spam", "Harassment", "Fake profile", "Suspicious behavior", "Repeated false claims", "Other")
+
 @Composable
 private fun CreatorCard(user: User, context: Context, onToast: (String) -> Unit) {
     val cs = MaterialTheme.colorScheme
     val status = AppState.followStatus(user.id)
     val tx = AppState.transactionFor(user.id)
     val block = AppState.exchangeBlockReason(user)
+    var actionsOpen by remember { mutableStateOf(false) }
 
-    BrandCard {
+    if (actionsOpen) {
+        AlertDialog(
+            onDismissRequest = { actionsOpen = false },
+            title = { Text("@${user.username}") },
+            text = {
+                Column {
+                    Text(
+                        if (AppState.isBlocked(user.id)) "Unblock this creator" else "Block this creator",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = cs.onSurface,
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            val blocked = AppState.toggleBlock(user.id)
+                            onToast(if (blocked) "@${user.username} blocked — hidden from discovery" else "Unblocked @${user.username}")
+                            actionsOpen = false
+                        }.padding(vertical = 8.dp)
+                    )
+                    Text(
+                        "Report creator",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = cs.onSurface,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    )
+                    reportReasons.forEach { reason ->
+                        Text(
+                            reason,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = cs.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                com.tiktokboost.app.data.Session.addReport(user.username, reason)
+                                onToast("Report sent for review — thank you")
+                                actionsOpen = false
+                            }.padding(vertical = 5.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { actionsOpen = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    BrandCard(onLongClick = { actionsOpen = true }) {
         Column(Modifier.padding(Dimens.card)) {
 
             // ── identity: avatar | name/username; badges flow on their OWN row ──

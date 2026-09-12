@@ -107,6 +107,31 @@ fun AdminScreen(onBack: () -> Unit) {
             } ?: Text("No active boosts.", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
 
             Spacer(Modifier.height(14.dp))
+            Section("Reports & moderation")
+            val openReports = remember { com.tiktokboost.app.data.Session.reports().filter { !it.resolved } }
+            if (openReports.isEmpty()) {
+                Text("No open reports.", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+            } else {
+                openReports.forEach { rep ->
+                    BrandCard {
+                        Column(Modifier.padding(14.dp)) {
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                Text("@${rep.targetUsername}", fontWeight = FontWeight.Bold, color = cs.onSurface, modifier = Modifier.weight(1f))
+                                Text(relativeTime(rep.createdAt), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(rep.reason, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                            Spacer(Modifier.height(10.dp))
+                            SecondaryButton("Mark reviewed", modifier = Modifier.fillMaxWidth()) {
+                                com.tiktokboost.app.data.Session.resolveReport(rep.id)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
             Section("Dispute queue")
             val openDisputes = AppState.disputes.filter { it.status == DisputeStatus.OPEN || it.status == DisputeStatus.UNDER_REVIEW }
             if (openDisputes.isEmpty()) {
@@ -141,7 +166,9 @@ fun AdminScreen(onBack: () -> Unit) {
             BrandCard {
                 Column(Modifier.padding(14.dp)) {
                     MetricRow("Your status", AppState.abuse.label)
+                    MetricRow("Account risk", AppState.riskLevel().label)
                     MetricRow("Suspicious flags", "${com.tiktokboost.app.data.Session.suspiciousFlags}")
+                    MetricRow("Referrals invited", "${com.tiktokboost.app.data.Session.referralInvited}")
                     if (AppState.abuse != com.tiktokboost.app.data.AbuseStatus.NORMAL) {
                         Spacer(Modifier.height(10.dp))
                         SecondaryButton("Clear flags (admin)", modifier = Modifier.fillMaxWidth()) {
