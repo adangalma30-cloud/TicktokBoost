@@ -56,6 +56,7 @@ was the one genuinely fake area (a single boolean + one-time quest) — now rebu
   code + copy + native share, per-friend records with claim buttons
 - Signup accepts an optional referral code and rejects your own code
 - Survives restart/logout (verified by test)
+- Full feature-by-feature audit in [`AUDIT.md`](AUDIT.md)
 
 ## What's new in v0.0.12 (settings + creator profiles)
 
