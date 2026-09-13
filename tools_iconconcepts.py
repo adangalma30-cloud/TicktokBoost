@@ -111,7 +111,7 @@ def shift(d, dx, dy):
         return f"{cmd} " + " ".join(nums)
     return re.sub(r"([A-Za-z])\s*((?:-?\d+\.?\d*\s*)+)", repl, d)
 
-def svg(size, d, cx=54.0, cy=54.0, block=0.58):
+def svg(size, d, cx=54.0, cy=54.0, block=0.42):
     s = size * block / 60.0
     ox = size/2 - cx*s; oy = size/2 - cy*s
     r = size * 0.24
@@ -158,13 +158,17 @@ def write_android_assets(winner="2_creator_rise"):
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- TickTokBoost "Creator Rise": creator + ascending growth, duotone -->
-    <path android:fillColor="{CYAN}" android:fillType="evenOdd"
-        android:pathData="{shift(d, -GHOST, -GHOST)}" />
-    <path android:fillColor="{PINK}" android:fillType="evenOdd"
-        android:pathData="{shift(d, GHOST, GHOST)}" />
-    <path android:fillColor="{WHITE}" android:fillType="evenOdd"
-        android:pathData="{d}" />
+    <!-- TickTokBoost "Creator Rise": creator + ascending growth, duotone.
+         Scaled to 60% around the optical center so the artwork sits well
+         inside the 66dp adaptive safe zone (no launcher-mask cropping). -->
+    <group android:scaleX="0.60" android:scaleY="0.60" android:pivotX="55" android:pivotY="53">
+        <path android:fillColor="{CYAN}" android:fillType="evenOdd"
+            android:pathData="{shift(d, -GHOST, -GHOST)}" />
+        <path android:fillColor="{PINK}" android:fillType="evenOdd"
+            android:pathData="{shift(d, GHOST, GHOST)}" />
+        <path android:fillColor="{WHITE}" android:fillType="evenOdd"
+            android:pathData="{d}" />
+    </group>
 </vector>
 '''
     open(f"{res}/drawable/ic_launcher_foreground.xml", "w").write(fg)
@@ -194,7 +198,9 @@ def write_android_assets(winner="2_creator_rise"):
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="{d}" />
+    <group android:scaleX="0.60" android:scaleY="0.60" android:pivotX="55" android:pivotY="53">
+        <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="{d}" />
+    </group>
 </vector>
 '''
     open(f"{res}/drawable/ic_launcher_monochrome.xml", "w").write(mono)

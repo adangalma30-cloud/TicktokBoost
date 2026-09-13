@@ -34,7 +34,8 @@ with points and featured placement.
 | `0.0.10` | Icon redesign: "Creator Rise" (6 concepts evaluated) — creator + ascending growth in the signature duotone | previous |
 | `0.0.11` | FINAL MVP: expiration, blocking/reporting, match score + For You, setup wizard, profile pictures, referral dashboard, auth hardening | previous |
 | `0.0.12` | Settings system (working theme switch + persistence), public creator profiles with photo/video content, content management | previous |
-| `0.0.13` | Referral system rebuilt: persistent per-friend records, repeatable rewards (idempotent, daily-limited), permanent Invite Friends section | current |
+| `0.0.13` | Referral system rebuilt: persistent per-friend records, repeatable rewards (idempotent, daily-limited), permanent Invite Friends section | previous |
+| `version-1.0.1` | Launcher icon artwork scaled into the adaptive safe zone; Daily Check-in claim fixed (eligibility = ready) | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.

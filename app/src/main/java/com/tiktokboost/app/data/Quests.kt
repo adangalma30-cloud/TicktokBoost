@@ -72,12 +72,21 @@ object Quests {
         val live = progressOf(def)
         var status = saved.status
 
-        // daily check-in resets every day
-        if (def.type == QuestType.DAILY_CHECKIN && saved.claimedAt != null) {
-            val claimedToday = Session.today() == java.text.SimpleDateFormat(
+        // Daily check-in: ELIGIBILITY is the ready condition. A user who can
+        // check in today (hasn't yet) is READY_TO_CLAIM — pressing Claim opens
+        // the check-in dialog / performs the real check-in. Previously a fresh
+        // day computed progress 0/1 -> AVAILABLE, so claiming returned
+        // INVALID_STATE ("Not available right now") — the exact reported bug.
+        if (def.type == QuestType.DAILY_CHECKIN) {
+            val claimedToday = saved.claimedAt != null && Session.today() == java.text.SimpleDateFormat(
                 "yyyy-MM-dd", java.util.Locale.US
             ).format(java.util.Date(saved.claimedAt!!))
-            if (!claimedToday) status = QuestStatus.AVAILABLE
+            status = when {
+                claimedToday -> QuestStatus.COMPLETED
+                Session.canCheckIn() -> QuestStatus.READY_TO_CLAIM
+                else -> QuestStatus.COMPLETED   // checked in today via another path
+            }
+            return saved.copy(progress = live, status = status)
         }
 
         if (status != QuestStatus.COMPLETED) {
