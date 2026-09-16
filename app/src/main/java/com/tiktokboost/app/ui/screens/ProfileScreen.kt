@@ -1,22 +1,37 @@
 package com.tiktokboost.app.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.size
-import com.tiktokboost.app.ui.theme.GoodGreen
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,66 +41,67 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tiktokboost.app.data.Achievements
-import com.tiktokboost.app.data.EconomyConfig
+import com.tiktokboost.app.data.BoostTaskStatus
+import com.tiktokboost.app.data.ContentItem
+import com.tiktokboost.app.data.MediaType
 import com.tiktokboost.app.data.Session
 import com.tiktokboost.app.data.Trust
+import com.tiktokboost.app.data.TxType
 import com.tiktokboost.app.ui.AppState
 import com.tiktokboost.app.ui.components.BrandButton
 import com.tiktokboost.app.ui.components.BrandCard
 import com.tiktokboost.app.ui.components.Dimens
 import com.tiktokboost.app.ui.components.ProfileAvatar
-import com.tiktokboost.app.ui.components.GradientAvatar
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import java.io.File
-import com.tiktokboost.app.ui.components.PremiumBadge
-import com.tiktokboost.app.ui.components.ProfileCompletionBar
 import com.tiktokboost.app.ui.components.SecondaryButton
 import com.tiktokboost.app.ui.components.StatBox
 import com.tiktokboost.app.ui.components.TrustBadge
 import com.tiktokboost.app.ui.components.TrustProgress
 import com.tiktokboost.app.ui.components.openTikTok
+import com.tiktokboost.app.ui.components.relativeTime
 import com.tiktokboost.app.ui.components.trustColor
+import com.tiktokboost.app.ui.theme.GoodGreen
+import java.io.File
 
+/**
+ * Profile — a clean, read-only creator profile. Editing lives on the dedicated
+ * EditProfileScreen (explicit Save Changes); content actions live behind ⋯ menus.
+ */
 @Composable
 fun ProfileScreen(
     onSignOut: () -> Unit,
     onSettings: () -> Unit,
     onHistory: () -> Unit,
     onPremium: () -> Unit,
-    onAnalytics: () -> Unit
+    onAnalytics: () -> Unit,
+    onEditProfile: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val picturePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        try {
-            val out = File(context.filesDir, "profile.jpg")
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                out.outputStream().use { input.copyTo(it) }
-            }
-            Session.profilePicturePath = out.absolutePath
-            AppState.refresh()
-        } catch (e: Exception) { /* keep initials avatar */ }
-    }
+    val cs = MaterialTheme.colorScheme
+
+    // content management state (uploads + per-item dialogs)
     var saving by remember { mutableStateOf<String?>(null) }
-    var editItem by remember { mutableStateOf<com.tiktokboost.app.data.ContentItem?>(null) }
-    var deleteItem by remember { mutableStateOf<com.tiktokboost.app.data.ContentItem?>(null) }
+    var editItem by remember { mutableStateOf<ContentItem?>(null) }
+    var deleteItem by remember { mutableStateOf<ContentItem?>(null) }
+    var contentTab by remember { mutableStateOf("All") }
 
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         saving = "Saving photo…"
         Thread {
             try {
-                val f = java.io.File(context.filesDir, "content_${System.currentTimeMillis()}.jpg")
+                val f = File(context.filesDir, "content_${System.currentTimeMillis()}.jpg")
                 context.contentResolver.openInputStream(uri)?.use { input -> f.outputStream().use { input.copyTo(it) } }
                 AppState.addContent(
-                    com.tiktokboost.app.data.ContentItem(
-                        "c_${System.currentTimeMillis()}", com.tiktokboost.app.data.MediaType.PHOTO,
+                    ContentItem(
+                        "c_${System.currentTimeMillis()}", MediaType.PHOTO,
                         f.absolutePath, "", System.currentTimeMillis(), System.currentTimeMillis()
                     )
                 )
@@ -98,11 +114,11 @@ fun ProfileScreen(
         saving = "Saving video…"
         Thread {
             try {
-                val f = java.io.File(context.filesDir, "content_${System.currentTimeMillis()}.mp4")
+                val f = File(context.filesDir, "content_${System.currentTimeMillis()}.mp4")
                 context.contentResolver.openInputStream(uri)?.use { input -> f.outputStream().use { input.copyTo(it) } }
                 AppState.addContent(
-                    com.tiktokboost.app.data.ContentItem(
-                        "c_${System.currentTimeMillis()}", com.tiktokboost.app.data.MediaType.VIDEO,
+                    ContentItem(
+                        "c_${System.currentTimeMillis()}", MediaType.VIDEO,
                         f.absolutePath, "", System.currentTimeMillis(), System.currentTimeMillis()
                     )
                 )
@@ -110,360 +126,448 @@ fun ProfileScreen(
             saving = null
         }.start()
     }
-    var name by remember { mutableStateOf(AppState.displayName) }
-    var tiktok by remember { mutableStateOf(AppState.tiktokUsername) }
-    var bio by remember { mutableStateOf(AppState.bio) }
-    var category by remember { mutableStateOf(AppState.category.ifBlank { EconomyConfig.categories.first() }) }
-    var saved by remember { mutableStateOf("") }
-    val cs = MaterialTheme.colorScheme
 
-    Scaffold(containerColor = cs.background) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Dimens.screenH)
-        ) {
-            Spacer(Modifier.height(18.dp))
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Dimens.screenH)
+    ) {
+        Spacer(Modifier.height(18.dp))
 
-            // ── header ─────────────────────────────────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.foundation.layout.Box {
-                    ProfileAvatar(AppState.displayName.ifBlank { "T" }, 0, 68.dp)
-                    androidx.compose.material3.Surface(
-                        onClick = { picturePicker.launch("image/*") },
-                        shape = androidx.compose.foundation.shape.CircleShape,
-                        color = cs.primary,
-                        modifier = Modifier
-                            .size(22.dp)
-                            .align(Alignment.BottomEnd)
-                    ) {
-                        androidx.compose.material3.Text(
-                            "✎",
-                            color = androidx.compose.ui.graphics.Color.Black,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(2.dp)
-                        )
-                    }
-                }
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            AppState.displayName.ifBlank { "Creator" },
-                            style = MaterialTheme.typography.headlineSmall, color = cs.onSurface,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        PremiumBadge(tier = AppState.premium, compact = true)
-                    }
-                    Text("@${AppState.tiktokUsername}", color = cs.primary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    Text(
-                        "${AppState.email} · joined ${relativeJoined()}",
-                        style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant, maxLines = 1
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(6.dp))
-            TextButton(onClick = { openTikTok(context, "https://www.tiktok.com/@${AppState.tiktokUsername}") }) {
-                Text("Open my TikTok profile ↗", color = cs.primary, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            // ── profile completion ─────────────────────────────────────
-            BrandCard {
-                Column(Modifier.padding(Dimens.card)) {
-                    ProfileCompletionBar(percent = AppState.profileCompleteness)
-                    if (AppState.profileCompleteness < 100) {
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Complete profiles rank higher in discovery — add what's missing below.",
-                            style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // ── trust card ─────────────────────────────────────────────
-            BrandCard {
-                Column(Modifier.padding(Dimens.card)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TrustBadge(level = AppState.myTrustLevel, animate = true)
-                        Spacer(Modifier.weight(1f))
-                        Text(
-                            "Trust score ${AppState.myTrustScore}/100",
-                            style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    TrustProgress(successfulExchanges = AppState.myExchanges)
-                    Spacer(Modifier.height(12.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatBox("Score", "${AppState.myTrustScore}", Modifier.weight(1f))
-                        StatBox("Exchanges", "${AppState.myExchanges}", Modifier.weight(1f))
-                        StatBox("Disputes", "${AppState.myDisputes}", Modifier.weight(1f))
-                        StatBox("Rate", "${AppState.myCompletionRate}%", Modifier.weight(1f))
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Row(
-                        Modifier.fillMaxWidth().padding(4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Trust.tiers.forEach { tier ->
-                            val active = AppState.myTrustLevel == tier.level
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("L${tier.level}", color = trustColor(tier.level), fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
-                                Text(
-                                    tier.name,
-                                    color = if (active) trustColor(tier.level) else cs.onSurfaceVariant,
-                                    fontSize = 9.sp,
-                                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
-                                )
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        Trust.toNextLevel(AppState.myExchanges)?.let { n ->
-                            "Complete $n more verified exchange${if (n == 1) "" else "s"} to level up."
-                        } ?: "You've reached Elite — the highest trust level. 🏆",
-                        style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
-                    )
-                    Text(
-                        "Account age: ${Session.accountAgeDays()} days · suspicious flags: ${Session.suspiciousFlags}",
-                        style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
-                    )
-                    Text(
-                        "Account risk: ${AppState.riskLevel().label}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = when (AppState.riskLevel()) {
-                            com.tiktokboost.app.data.RiskLevel.LOW -> GoodGreen
-                            com.tiktokboost.app.data.RiskLevel.MEDIUM -> androidx.compose.ui.graphics.Color(0xFFFFB020)
-                            com.tiktokboost.app.data.RiskLevel.HIGH -> androidx.compose.ui.graphics.Color(0xFFFF5A6E)
-                        }
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // ── achievements ───────────────────────────────────────────
-            BrandCard {
-                Column(Modifier.padding(Dimens.card)) {
-                    Text("Achievements", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
-                    Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Achievements.all.forEach { a ->
-                            val unlocked = a.id in AppState.achievements
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    a.emoji,
-                                    fontSize = 22.sp,
-                                    color = if (unlocked) cs.onSurface else cs.outline,
-                                    modifier = Modifier.padding(bottom = 2.dp)
-                                )
-                                Text(
-                                    a.title,
-                                    fontSize = 9.sp,
-                                    lineHeight = 11.sp,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    color = if (unlocked) cs.onSurface else cs.outline,
-                                    fontWeight = if (unlocked) FontWeight.Bold else FontWeight.Normal
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatBox("Followed", "${AppState.followedCount}", Modifier.weight(1f))
-                StatBox("Followed back", "${AppState.returnedCount}", Modifier.weight(1f))
-                StatBox("Lifetime ↑", "${AppState.lifetimeEarned}", Modifier.weight(1f))
-            }
-            Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatBox("Tasks done", "${AppState.boostTasks.count { it.status == com.tiktokboost.app.data.BoostTaskStatus.COMPLETED && !it.createdByMe }}", Modifier.weight(1f))
-                StatBox("Tasks created", "${AppState.boostTasks.count { it.createdByMe }}", Modifier.weight(1f))
-                StatBox("Boosts bought", "${AppState.transactions.count { it.type == com.tiktokboost.app.data.TxType.BOOST && it.coins < 0 }}", Modifier.weight(1f))
-            }
-
-            Spacer(Modifier.height(18.dp))
-
-            // ── my content: photos & short videos on my public profile ──
-            Text("My content", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "Photos and videos shown on your public creator profile.",
-                style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
-            )
-            Spacer(Modifier.height(8.dp))
-            com.tiktokboost.app.ui.screens.ContentGrid(
-                items = AppState.contentItems,
-                onOpen = { },
-                editable = true
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SecondaryButton("📷 Add photo", modifier = Modifier.weight(1f)) { photoPicker.launch("image/*") }
-                SecondaryButton("🎬 Add video", modifier = Modifier.weight(1f)) { videoPicker.launch("video/*") }
-            }
-            saving?.let {
-                Spacer(Modifier.height(6.dp))
+        // ═══ PROFILE HEADER (read-only) ═════════════════════════════
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            ProfileAvatar(AppState.displayName.ifBlank { "T" }, 0, 78.dp)
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.size(14.dp),
-                        strokeWidth = 2.dp,
-                        color = cs.primary
+                    Text(
+                        AppState.displayName.ifBlank { "Creator" },
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = cs.onSurface,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Text(it, style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant)
+                    Spacer(Modifier.width(6.dp))
+                    com.tiktokboost.app.ui.components.PremiumBadge(tier = AppState.premium, compact = true)
                 }
+                Text(
+                    "@${AppState.tiktokUsername}",
+                    color = cs.primary, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    "Member since day ${Session.accountAgeDays() + 1}",
+                    style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
+                )
             }
-            // per-item manage rows
-            AppState.contentItems.forEach { item ->
-                Row(
-                    Modifier.fillMaxWidth().padding(top = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        // bio
+        if (AppState.bio.isNotBlank()) {
+            Text(
+                AppState.bio,
+                style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // category chip
+        if (AppState.category.isNotBlank()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(cs.primaryContainer)
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        (if (item.mediaType == com.tiktokboost.app.data.MediaType.VIDEO) "🎬" else "📷") +
-                            " " + item.caption.ifBlank { "(no caption)" },
-                        style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
-                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        AppState.category,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = cs.primary, fontWeight = FontWeight.Bold
                     )
-                    androidx.compose.material3.TextButton(onClick = { editItem = item }) { Text("Edit", color = cs.primary, fontSize = 12.sp) }
-                    androidx.compose.material3.TextButton(onClick = { deleteItem = item }) { Text("Delete", color = cs.error, fontSize = 12.sp) }
                 }
+                Spacer(Modifier.weight(1f))
+                TrustBadge(level = AppState.myTrustLevel)
             }
+        } else {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TrustBadge(level = AppState.myTrustLevel)
+            }
+        }
 
-            Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(12.dp))
 
-            // ── edit profile (all completeness fields) ───────────────────
-            BrandCard {
-                Column(Modifier.padding(Dimens.card)) {
-                    Text("Edit profile", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = name, onValueChange = { name = it },
-                        label = { Text("Display name") }, singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+        // primary actions
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SecondaryButton(
+                text = "Edit Profile",
+                icon = Icons.Filled.Edit,
+                modifier = Modifier.weight(1f),
+                onClick = onEditProfile
+            )
+            SecondaryButton("Open TikTok", modifier = Modifier.weight(1f)) {
+                openTikTok(context, "https://www.tiktok.com/@${AppState.tiktokUsername}")
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        // profile completeness (feeds discovery ranking) — tap to edit
+        if (AppState.profileCompleteness < 100) {
+            com.tiktokboost.app.ui.components.ProfileCompletionBar(
+                percent = AppState.profileCompleteness,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onEditProfile() }
+            )
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // ═══ STATS ═════════════════════════════════════════════════
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatBox("Coins", "${AppState.coins}", Modifier.weight(1f))
+            StatBox("Tasks done", "${AppState.boostTasks.count { it.status == BoostTaskStatus.COMPLETED && !it.createdByMe }}", Modifier.weight(1f))
+            StatBox("Boosts bought", "${AppState.transactions.count { it.type == TxType.BOOST && it.coins < 0 }}", Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatBox("Exchanges", "${AppState.myExchanges}", Modifier.weight(1f))
+            StatBox("Followed", "${AppState.followedCount}", Modifier.weight(1f))
+            StatBox("Lifetime ↑", "${AppState.lifetimeEarned}", Modifier.weight(1f))
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // ═══ TRUST ═════════════════════════════════════════════════
+        BrandCard {
+            Column(Modifier.padding(Dimens.card)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TrustBadge(level = AppState.myTrustLevel, animate = true)
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        "Trust score ${AppState.myTrustScore}/100",
+                        style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant
                     )
-                    Spacer(Modifier.height(10.dp))
-                    OutlinedTextField(
-                        value = tiktok, onValueChange = { tiktok = it },
-                        label = { Text("TikTok username") }, singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    OutlinedTextField(
-                        value = bio, onValueChange = { bio = it },
-                        label = { Text("Bio") },
-                        supportingText = { Text("${bio.length}/160") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    Text("Category", style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant)
-                    Spacer(Modifier.height(6.dp))
-                    androidx.compose.foundation.lazy.LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(EconomyConfig.categories.size) { i ->
-                            val c = EconomyConfig.categories[i]
-                            androidx.compose.material3.FilterChip(
-                                selected = category == c,
-                                onClick = { category = c },
-                                label = { Text(c) }
+                }
+                Spacer(Modifier.height(10.dp))
+                TrustProgress(successfulExchanges = AppState.myExchanges)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    Trust.toNextLevel(AppState.myExchanges)?.let { n ->
+                        "Complete $n more verified exchange${if (n == 1) "" else "s"} to level up."
+                    } ?: "You've reached Elite — the highest trust level. 🏆",
+                    style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // ═══ ACHIEVEMENTS ══════════════════════════════════════════
+        BrandCard {
+            Column(Modifier.padding(Dimens.card)) {
+                Text("Achievements", style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    com.tiktokboost.app.data.Achievements.all.forEach { a ->
+                        val unlocked = a.id in AppState.achievements
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                            Text(a.emoji, fontSize = 22.sp)
+                            Text(
+                                a.title,
+                                fontSize = 9.sp, lineHeight = 11.sp,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                color = if (unlocked) cs.onSurface else cs.onSurfaceVariant,
+                                fontWeight = if (unlocked) FontWeight.Bold else FontWeight.Normal
                             )
                         }
                     }
-                    if (saved.isNotBlank()) {
-                        Spacer(Modifier.height(6.dp))
-                        Text(saved, color = cs.primary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    BrandButton("Save changes") {
-                        Session.displayName = name.trim().ifBlank { "Creator" }
-                        Session.tiktokUsername = tiktok.trim().removePrefix("@").ifBlank { "creator" }
-                        Session.bio = bio.trim().take(160)
-                        Session.category = category
-                        AppState.checkAchievements()
-                        AppState.refresh()
-                        saved = "Saved ✓"
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // ═══ CONTENT ═══════════════════════════════════════════════
+        Text("Content", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+        Spacer(Modifier.height(8.dp))
+
+        // filter tabs
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("All", "Photos", "Videos").forEach { tab ->
+                FilterChip(
+                    selected = contentTab == tab,
+                    onClick = { contentTab = tab },
+                    label = { Text(tab) }
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+
+        val visibleContent = when (contentTab) {
+            "Photos" -> AppState.contentItems.filter { it.mediaType == MediaType.PHOTO }
+            "Videos" -> AppState.contentItems.filter { it.mediaType == MediaType.VIDEO }
+            else -> AppState.contentItems
+        }
+
+        if (visibleContent.isEmpty()) {
+            BrandCard {
+                Column(
+                    Modifier.fillMaxWidth().padding(vertical = 26.dp, horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("📸", fontSize = 32.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text("No content yet", style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Share your first photo or video.",
+                        style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        BrandButton("📷 Add Photo", modifier = Modifier.weight(1f)) { photoPicker.launch("image/*") }
+                        BrandButton("🎬 Add Video", modifier = Modifier.weight(1f)) { videoPicker.launch("video/*") }
                     }
                 }
             }
-
-            Spacer(Modifier.height(14.dp))
-            SecondaryButton("View history", onClick = onHistory, modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
-            SecondaryButton("Analytics", onClick = onAnalytics, modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
-            if (AppState.premium == com.tiktokboost.app.data.PremiumTier.FREE) {
-                SecondaryButton("Upgrade to Premium 💎", onClick = onPremium, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(8.dp))
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                visibleContent.forEach { item ->
+                    ContentCard(
+                        item = item,
+                        onEdit = { editItem = item },
+                        onDelete = { deleteItem = item }
+                    )
+                }
             }
-            SecondaryButton("Settings", onClick = onSettings, modifier = Modifier.fillMaxWidth())
-
-            Spacer(Modifier.height(12.dp))
-            TextButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
-                Text("Sign out", color = cs.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SecondaryButton("📷 Add Photo", modifier = Modifier.weight(1f)) { photoPicker.launch("image/*") }
+                SecondaryButton("🎬 Add Video", modifier = Modifier.weight(1f)) { videoPicker.launch("video/*") }
             }
-            Spacer(Modifier.height(20.dp))
         }
+
+        saving?.let {
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = cs.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(it, style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant)
+            }
+        }
+
+        Spacer(Modifier.height(18.dp))
+
+        // ═══ ACCOUNT ═══════════════════════════════════════════════
+        BrandCard {
+            Column(Modifier.padding(vertical = 6.dp, horizontal = 8.dp)) {
+                AccountRow("🕘", "Transaction history", cs, onHistory)
+                AccountRow("📊", "Analytics", cs, onAnalytics)
+                if (AppState.premium == com.tiktokboost.app.data.PremiumTier.FREE) {
+                    AccountRow("💎", "Upgrade to Premium", cs, onPremium)
+                } else {
+                    AccountRow("💎", "Manage subscription", cs, onPremium)
+                }
+                AccountRow("⚙️", "Settings", cs, onSettings)
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+        TextButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
+            Text("Sign out", color = cs.onSurfaceVariant, fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(Modifier.height(24.dp))
     }
 
-    // ── edit caption dialog ────────────────────────────────────────
+    // ── edit caption dialog (from ⋯ → Edit) ─────────────────────────
     editItem?.let { item ->
         var caption by remember(item.id) { mutableStateOf(item.caption) }
-        androidx.compose.material3.AlertDialog(
+        AlertDialog(
             onDismissRequest = { editItem = null },
-            title = { Text("Edit caption") },
+            title = { Text("Edit content") },
             text = {
-                androidx.compose.material3.OutlinedTextField(
-                    value = caption, onValueChange = { caption = it },
-                    label = { Text("Caption") }, singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column {
+                    Text(
+                        "${if (item.mediaType == MediaType.VIDEO) "Video" else "Photo"} · ${relativeTime(item.createdAt)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = caption,
+                        onValueChange = { caption = it },
+                        label = { Text("Caption") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
+                TextButton(onClick = {
                     AppState.updateContent(item.copy(caption = caption.trim(), updatedAt = System.currentTimeMillis()))
                     editItem = null
-                }) { Text("Save", color = cs.primary, fontWeight = FontWeight.Bold) }
+                }) { Text("Save Changes", fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { androidx.compose.material3.TextButton(onClick = { editItem = null }) { Text("Cancel") } }
+            dismissButton = {
+                TextButton(onClick = { editItem = null }) { Text("Cancel") }
+            }
         )
     }
 
-    // ── delete confirmation ────────────────────────────────────────
+    // ── delete confirmation (from ⋯ → Delete) ────────────────────────
     deleteItem?.let { item ->
-        androidx.compose.material3.AlertDialog(
+        AlertDialog(
             onDismissRequest = { deleteItem = null },
-            title = { Text("Delete this ${if (item.mediaType == com.tiktokboost.app.data.MediaType.VIDEO) "video" else "photo"}?") },
+            title = { Text("Delete this content?") },
             text = { Text("This removes it from your public profile. This cannot be undone.") },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
+                TextButton(onClick = {
                     AppState.deleteContent(item.id)
                     deleteItem = null
-                }) { Text("Delete", color = cs.error, fontWeight = FontWeight.Bold) }
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { androidx.compose.material3.TextButton(onClick = { deleteItem = null }) { Text("Cancel") } }
+            dismissButton = {
+                TextButton(onClick = { deleteItem = null }) { Text("Cancel") }
+            }
         )
     }
 }
 
-private fun relativeJoined(): String = "day ${com.tiktokboost.app.data.Session.accountAgeDays() + 1}"
+@Composable
+private fun AccountRow(icon: String, label: String, cs: androidx.compose.material3.ColorScheme, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(icon, fontSize = 18.sp)
+        Spacer(Modifier.width(12.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = cs.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Text("›", color = cs.onSurfaceVariant, fontSize = 20.sp)
+    }
+}
+
+/**
+ * Professional content card: thumbnail with type indicator, caption, date,
+ * and a ⋯ menu (Edit / Delete behind it — never permanently visible).
+ */
+@Composable
+private fun ContentCard(item: ContentItem, onEdit: () -> Unit, onDelete: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    var menuOpen by remember { mutableStateOf(false) }
+
+    BrandCard {
+        Row(
+            Modifier.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // thumbnail + type indicator
+            Box(
+                Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        Brush.linearGradient(listOf(cs.surfaceVariant, cs.surface))
+                    )
+            ) {
+                val bmp = remember(item.path) {
+                    item.path?.let { android.graphics.BitmapFactory.decodeFile(it) }
+                }
+                when {
+                    bmp != null -> androidx.compose.foundation.Image(
+                        bitmap = bmp.asImageBitmap(),
+                        contentDescription = item.caption.ifBlank { "Content" },
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    else -> Text(
+                        if (item.mediaType == MediaType.VIDEO) "🎬" else "📷",
+                        fontSize = 24.sp,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                if (item.mediaType == MediaType.VIDEO) {
+                    Box(
+                        Modifier
+                            .align(Alignment.Center)
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(cs.primary.copy(alpha = 0.9f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.PlayArrow,
+                            contentDescription = "Video",
+                            tint = androidx.compose.ui.graphics.Color.Black,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    item.caption.ifBlank { "No caption" },
+                    style = MaterialTheme.typography.titleSmall,
+                    color = cs.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "${if (item.mediaType == MediaType.VIDEO) "Video" else "Photo"} · ${relativeTime(item.createdAt)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = cs.onSurfaceVariant
+                )
+            }
+            // ⋯ menu — actions hidden until requested
+            Box {
+                IconButton(
+                    onClick = { menuOpen = true },
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.MoreVert,
+                        contentDescription = "More options",
+                        tint = cs.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = menuOpen,
+                    onDismissRequest = { menuOpen = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = { menuOpen = false; onEdit() }
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "Delete",
+                                color = cs.error,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        onClick = { menuOpen = false; onDelete() }
+                    )
+                }
+            }
+        }
+    }
+}

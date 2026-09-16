@@ -126,7 +126,7 @@ class StabilityTest {
         rule.onNodeWithText("Profile").performClick()
         rule.waitForIdle()
         rule.mainClock.advanceTimeBy(400)
-        rule.onNodeWithText("View history").performScrollTo().assertExists()
+        rule.onNodeWithText("Transaction history").performScrollTo().assertExists()
     }
 
     private fun dumpTexts() {
@@ -214,7 +214,7 @@ class StabilityTest {
             rule.mainClock.advanceTimeBy(400)
             rule.waitForIdle()
         }
-        rule.onNodeWithText("Edit profile").performScrollTo().assertExists()
+        rule.onNodeWithText("Edit Profile").performScrollTo().assertExists()
     }
 
     @Test

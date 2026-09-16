@@ -75,6 +75,7 @@ object Routes {
     const val BLOCKED = "blocked"
     const val CREATOR = "creator/{userId}"
     const val LEADERBOARD = "leaderboard"
+    const val EDIT_PROFILE = "edit_profile"
 
     val bottomTabs = listOf(HOME, DISCOVER, EARN, BOOST, PROFILE)
 }
@@ -227,7 +228,8 @@ fun TikTokBoostApp() {
                     onSettings = { navController.navigate(Routes.SETTINGS) },
                     onHistory = { navController.navigate(Routes.HISTORY) },
                     onPremium = { navController.navigate(Routes.PREMIUM) },
-                    onAnalytics = { navController.navigate(Routes.ANALYTICS) }
+                    onAnalytics = { navController.navigate(Routes.ANALYTICS) },
+                    onEditProfile = { navController.navigate(Routes.EDIT_PROFILE) }
                 )
             }
             composable(Routes.COINS) {
@@ -259,6 +261,9 @@ fun TikTokBoostApp() {
             }
             composable(Routes.LEADERBOARD) {
                 com.tiktokboost.app.ui.screens.LeaderboardScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.EDIT_PROFILE) {
+                com.tiktokboost.app.ui.screens.EditProfileScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
