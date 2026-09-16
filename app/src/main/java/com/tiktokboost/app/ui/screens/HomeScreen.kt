@@ -74,7 +74,8 @@ fun HomeScreen(
     onOpenBoost: () -> Unit,
     onOpenEarn: () -> Unit,
     onOpenHistory: () -> Unit,
-    onOpenNotifications: () -> Unit
+    onOpenNotifications: () -> Unit,
+    onOpenLeaderboard: () -> Unit = {}
 ) {
     var released by remember { mutableStateOf(false) }
     val cs = MaterialTheme.colorScheme
@@ -203,6 +204,26 @@ fun HomeScreen(
                         }
                     }
 
+                    Spacer(Modifier.height(8.dp))
+                    // daily check-in status
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (AppState.canCheckIn()) "Daily check-in: available (+${com.tiktokboost.app.data.EconomyConfig.DAILY_CHECKIN_REWARD} coin)" else "Daily check-in: done today ✓",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (AppState.canCheckIn()) cs.primary else cs.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (AppState.canCheckIn()) {
+                            Text(
+                                "Claim in Earn →",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = cs.primary, fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { onOpenEarn() }
+                            )
+                        }
+                    }
+
                     Spacer(Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         TrustBadge(level = AppState.myTrustLevel, animate = true)
@@ -262,6 +283,46 @@ fun HomeScreen(
             }
             Spacer(Modifier.height(14.dp))
         }
+
+        // ── boosts summary ─────────────────────────────────────────────
+        val availableTasks = AppState.boostTasks.count { it.status == com.tiktokboost.app.data.BoostTaskStatus.AVAILABLE && !it.createdByMe }
+        val completedTasks = AppState.boostTasks.count { it.status == com.tiktokboost.app.data.BoostTaskStatus.COMPLETED && !it.createdByMe }
+        StaggeredAppear(2) {
+            BrandCard(onClick = onOpenBoost) {
+                Row(Modifier.padding(Dimens.card), verticalAlignment = Alignment.CenterVertically) {
+                    Text("🚀", fontSize = 20.sp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "$availableTasks boost${if (availableTasks == 1) "" else "s"} available",
+                            style = MaterialTheme.typography.titleSmall, color = cs.onSurface
+                        )
+                        Text("$completedTasks completed · tap to view the task board", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                    }
+                    Text("→", color = cs.primary, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+
+        // ── leaderboard entry ──────────────────────────────────────────
+        StaggeredAppear(2) {
+            BrandCard(onClick = onOpenLeaderboard) {
+                Row(Modifier.padding(Dimens.card), verticalAlignment = Alignment.CenterVertically) {
+                    Text("🏆", fontSize = 20.sp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            if (AppState.myRank() in 1..20) "You're #${AppState.myRank()} on the leaderboard" else "Leaderboard",
+                            style = MaterialTheme.typography.titleSmall, color = cs.onSurface
+                        )
+                        Text("Top creators by earned coins", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                    }
+                    Text("→", color = cs.primary, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
 
         // ── recommended creators strip ────────────────────────────────
         val recommended = remember(AppState.transactions.size) {

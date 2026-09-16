@@ -661,7 +661,73 @@ object Session {
         sp.edit().putStringSet("reminded_tx", set).apply()
     }
 
-    // ---- referrals (v0.0.13): persistent per-friend records ------------------
+    // ---- boost tasks (v1.0.1): community task board ---------------------------
+
+    private fun boostTaskJson(): org.json.JSONArray =
+        try { org.json.JSONArray(sp.getString("boost_tasks", "[]") ?: "[]") } catch (e: Exception) { org.json.JSONArray() }
+
+    private fun taskToJson(t: BoostTask): org.json.JSONObject {
+        val o = org.json.JSONObject()
+        o.put("id", t.id); o.put("title", t.title); o.put("desc", t.description)
+        o.put("reward", t.reward); o.put("status", t.status.name); o.put("mine", t.createdByMe)
+        if (t.startedAt != null) o.put("started", t.startedAt)
+        if (t.completedAt != null) o.put("completed", t.completedAt)
+        if (t.expiresAt != null) o.put("expires", t.expiresAt)
+        if (t.rewardTransactionId != null) o.put("tx", t.rewardTransactionId)
+        return o
+    }
+
+    fun boostTasks(): List<BoostTask> {
+        // first visit: seed the community board with starter tasks
+        if (!sp.getBoolean("boost_tasks_seeded", false)) {
+            val now = System.currentTimeMillis()
+            listOf(
+                BoostTask("bt_engage", "Engage with 3 creators", "Open 3 creator profiles from Discover and explore their content.", 3, BoostTaskStatus.AVAILABLE, false, expiresAt = now + 3 * 86_400_000L),
+                BoostTask("bt_content", "Share a photo", "Add a photo to your own creator profile so others can see your work.", 2, BoostTaskStatus.AVAILABLE, false, expiresAt = now + 3 * 86_400_000L),
+                BoostTask("bt_trusted", "Complete an exchange with a Trusted creator", "Find an L3+ creator in Discover and complete a confirmed exchange.", 5, BoostTaskStatus.AVAILABLE, false, expiresAt = now + 5 * 86_400_000L)
+            ).forEach { addBoostTask(it) }
+            sp.edit().putBoolean("boost_tasks_seeded", true).apply()
+        }
+        val arr = boostTaskJson()
+        val out = mutableListOf<BoostTask>()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            out.add(BoostTask(
+                id = o.optString("id"),
+                title = o.optString("title"),
+                description = o.optString("desc"),
+                reward = o.optInt("reward"),
+                status = runCatching { BoostTaskStatus.valueOf(o.optString("status")) }.getOrDefault(BoostTaskStatus.AVAILABLE),
+                createdByMe = o.optBoolean("mine"),
+                startedAt = if (o.has("started")) o.optLong("started") else null,
+                completedAt = if (o.has("completed")) o.optLong("completed") else null,
+                expiresAt = if (o.has("expires")) o.optLong("expires") else null,
+                rewardTransactionId = if (o.has("tx")) o.optString("tx") else null
+            ))
+        }
+        return out.asReversed()  // newest first (insertion order reversed)
+    }
+
+    private fun addBoostTaskInternal(t: BoostTask) {
+        val arr = boostTaskJson()
+        arr.put(taskToJson(t))
+        sp.edit().putString("boost_tasks", arr.toString()).apply()
+    }
+
+    fun addBoostTask(t: BoostTask) = addBoostTaskInternal(t)
+
+    fun updateBoostTask(t: BoostTask) {
+        val arr = boostTaskJson()
+        for (i in 0 until arr.length()) {
+            if (arr.optJSONObject(i)?.optString("id") == t.id) {
+                arr.put(i, taskToJson(t))
+                sp.edit().putString("boost_tasks", arr.toString()).apply()
+                return
+            }
+        }
+    }
+
+    // ---- referrals (persistent, repeatable) -----------------------------------
 
     private fun referralJson(): org.json.JSONArray =
         try { org.json.JSONArray(sp.getString("referrals", "[]") ?: "[]") } catch (e: Exception) { org.json.JSONArray() }

@@ -11,7 +11,7 @@ android {
         applicationId = "com.tiktokboost.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 14
+        versionCode = 15
         versionName = "1.0.1"
 
         vectorDrawables {

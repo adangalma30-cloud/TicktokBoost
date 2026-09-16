@@ -106,6 +106,23 @@ data class ContentItem(
     val demoVisual: String? = null // emoji tile for demo creators (no external assets)
 )
 
+// ── boost tasks (community task board) ──────────────────────────────────────
+
+enum class BoostTaskStatus { AVAILABLE, IN_PROGRESS, COMPLETED, EXPIRED }
+
+data class BoostTask(
+    val id: String,
+    val title: String,
+    val description: String,
+    val reward: Int,
+    val status: BoostTaskStatus,
+    val createdByMe: Boolean,
+    val startedAt: Long? = null,
+    val completedAt: Long? = null,
+    val expiresAt: Long? = null,   // deadline while IN_PROGRESS / availability window
+    val rewardTransactionId: String? = null
+)
+
 // ── referrals (persistent, repeatable) ──────────────────────────────────────
 
 enum class ReferralStatus { INVITED, REGISTERED, QUALIFYING, QUALIFIED, REWARDED, REJECTED }

@@ -18,6 +18,11 @@ object EconomyConfig {
     const val EXCHANGE_EXPIRATION_HOURS = 24      // unconfirmed exchanges expire, no punishment
     const val CONFIRMATION_REMINDER_MINUTES = 60  // one gentle reminder per pending exchange
 
+    // ---- boost tasks (community board) ----------------------------------------
+    const val BOOST_TASK_HOURS = 24              // in-progress window before EXPIRED
+    const val BOOST_TASK_MIN_REWARD = 2
+    const val BOOST_TASK_MAX_REWARD = 20
+
     // ---- referrals (repeatable, anti-abuse limited) --------------------------
     const val REFERRAL_REWARD = 5
     const val REFERRAL_DAILY_REWARD_LIMIT = 3      // max rewarded referrals per day

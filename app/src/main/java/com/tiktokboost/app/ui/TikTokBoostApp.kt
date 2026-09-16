@@ -74,6 +74,7 @@ object Routes {
     const val SETUP = "setup"
     const val BLOCKED = "blocked"
     const val CREATOR = "creator/{userId}"
+    const val LEADERBOARD = "leaderboard"
 
     val bottomTabs = listOf(HOME, DISCOVER, EARN, BOOST, PROFILE)
 }
@@ -189,7 +190,8 @@ fun TikTokBoostApp() {
                     onOpenBoost = { navController.navigate(Routes.BOOST) },
                     onOpenEarn = { navController.navigate(Routes.EARN) },
                     onOpenHistory = { navController.navigate(Routes.HISTORY) },
-                    onOpenNotifications = { navController.navigate(Routes.NOTIFICATIONS) }
+                    onOpenNotifications = { navController.navigate(Routes.NOTIFICATIONS) },
+                    onOpenLeaderboard = { navController.navigate(Routes.LEADERBOARD) }
                 )
             }
             composable(Routes.DISCOVER) {
@@ -254,6 +256,9 @@ fun TikTokBoostApp() {
             }
             composable(Routes.BLOCKED) {
                 BlockedUsersScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.LEADERBOARD) {
+                com.tiktokboost.app.ui.screens.LeaderboardScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(

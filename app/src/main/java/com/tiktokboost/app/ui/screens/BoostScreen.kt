@@ -1,6 +1,7 @@
 package com.tiktokboost.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,10 +55,58 @@ import com.tiktokboost.app.ui.theme.SigGradientStart
 @Composable
 fun BoostScreen(onOpenPremium: () -> Unit, onOpenAnalytics: () -> Unit) {
     var toast by remember { mutableStateOf<String?>(null) }
+    var createOpen by remember { mutableStateOf(false) }
     val cs = MaterialTheme.colorScheme
 
     LaunchedEffect(toast) {
         if (toast != null) { kotlinx.coroutines.delay(3200); toast = null }
+    }
+
+    if (createOpen) {
+        var title by remember { mutableStateOf("") }
+        var desc by remember { mutableStateOf("") }
+        var reward by remember { mutableStateOf("5") }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { createOpen = false },
+            title = { Text("Create a community task") },
+            text = {
+                Column {
+                    Text(
+                        "Your reward is staked from your balance and held until a creator completes the task.",
+                        style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = title, onValueChange = { title = it },
+                        label = { Text("Title") }, singleLine = true, modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = desc, onValueChange = { desc = it },
+                        label = { Text("Description") }, modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = reward,
+                        onValueChange = { reward = it.filter { c -> c.isDigit() }.take(2) },
+                        label = { Text("Reward (coins, 2-20)") }, singleLine = true, modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    val res = AppState.createTask(title, desc, reward.toIntOrNull() ?: 0)
+                    if (res is EconomyResult.Success) createOpen = false
+                    toast = when (res) {
+                        is EconomyResult.Success -> res.message
+                        is EconomyResult.Failure -> AppState.detailFor(res.reason)
+                    }
+                }) { Text("Publish", color = cs.primary, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { createOpen = false }) { Text("Cancel") }
+            }
+        )
     }
 
     Column(
@@ -120,6 +169,38 @@ fun BoostScreen(onOpenPremium: () -> Unit, onOpenAnalytics: () -> Unit) {
             "Boost limits: ${EconomyService_boostLimitLabel()} active at a time on your plan.",
             style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
         )
+
+        Spacer(Modifier.height(18.dp))
+        SectionTitle("Community tasks", actionText = "Create", onAction = { createOpen = true })
+
+        val communityTasks = AppState.boostTasks.filter { !it.createdByMe }
+        val myTasks = AppState.boostTasks.filter { it.createdByMe }
+        if (communityTasks.isEmpty() && myTasks.isEmpty()) {
+            BrandCard {
+                Column(
+                    Modifier.fillMaxWidth().padding(vertical = 24.dp, horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("📋", fontSize = 30.sp)
+                    Spacer(Modifier.height(6.dp))
+                    Text("No available boosts", style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
+                    Text("New community tasks appear here — or create your own.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                }
+            }
+        }
+        communityTasks.forEach { t -> TaskCard(t, cs) { res -> toast = when (res) {
+            is EconomyResult.Success -> res.message ?: "Done"
+            is EconomyResult.Failure -> AppState.detailFor(res.reason)
+        } } }
+        if (myTasks.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Text("Your tasks", style = MaterialTheme.typography.titleSmall, color = cs.onSurfaceVariant)
+            Spacer(Modifier.height(6.dp))
+            myTasks.forEach { t -> TaskCard(t, cs) { res -> toast = when (res) {
+                is EconomyResult.Success -> res.message ?: "Done"
+                is EconomyResult.Failure -> AppState.detailFor(res.reason)
+            } } }
+        }
 
         Spacer(Modifier.height(18.dp))
         SectionTitle("Go further")
@@ -223,4 +304,56 @@ private fun BoostTierCard(tier: BoostTier, onResult: (EconomyResult) -> Unit) {
             }
         }
     }
+}
+
+
+@Composable
+private fun TaskCard(t: com.tiktokboost.app.data.BoostTask, cs: androidx.compose.material3.ColorScheme, onResult: (EconomyResult) -> Unit) {
+    BrandCard {
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(t.title, style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
+                    Text(t.description, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 2)
+                }
+                Spacer(Modifier.width(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    com.tiktokboost.app.ui.components.CoinIcon(size = 13.dp)
+                    Spacer(Modifier.width(4.dp))
+                    Text("+${t.reward}", color = androidx.compose.ui.graphics.Color(0xFFF5A623), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TaskStatusChip(t.status, cs)
+                Spacer(Modifier.weight(1f))
+                when (t.status) {
+                    com.tiktokboost.app.data.BoostTaskStatus.AVAILABLE ->
+                        com.tiktokboost.app.ui.components.SecondaryButton("Start", onClick = { onResult(AppState.startTask(t.id)) })
+                    com.tiktokboost.app.data.BoostTaskStatus.IN_PROGRESS ->
+                        com.tiktokboost.app.ui.components.BrandButton("Complete  +${t.reward}", onClick = { onResult(AppState.completeTask(t.id)) })
+                    else -> {}
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TaskStatusChip(status: com.tiktokboost.app.data.BoostTaskStatus, cs: androidx.compose.material3.ColorScheme) {
+    val (label, color) = when (status) {
+        com.tiktokboost.app.data.BoostTaskStatus.AVAILABLE -> "Available" to cs.primary
+        com.tiktokboost.app.data.BoostTaskStatus.IN_PROGRESS -> "In progress" to com.tiktokboost.app.ui.theme.WarnAmber
+        com.tiktokboost.app.data.BoostTaskStatus.COMPLETED -> "Completed" to com.tiktokboost.app.ui.theme.GoodGreen
+        com.tiktokboost.app.data.BoostTaskStatus.EXPIRED -> "Expired" to cs.onSurfaceVariant
+    }
+    Text(
+        label,
+        style = MaterialTheme.typography.labelSmall,
+        color = color, fontWeight = FontWeight.Bold,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(color.copy(alpha = 0.14f))
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    )
 }

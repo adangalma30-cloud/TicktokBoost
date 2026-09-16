@@ -293,6 +293,12 @@ fun ProfileScreen(
                 StatBox("Followed back", "${AppState.returnedCount}", Modifier.weight(1f))
                 StatBox("Lifetime ↑", "${AppState.lifetimeEarned}", Modifier.weight(1f))
             }
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatBox("Tasks done", "${AppState.boostTasks.count { it.status == com.tiktokboost.app.data.BoostTaskStatus.COMPLETED && !it.createdByMe }}", Modifier.weight(1f))
+                StatBox("Tasks created", "${AppState.boostTasks.count { it.createdByMe }}", Modifier.weight(1f))
+                StatBox("Boosts bought", "${AppState.transactions.count { it.type == com.tiktokboost.app.data.TxType.BOOST && it.coins < 0 }}", Modifier.weight(1f))
+            }
 
             Spacer(Modifier.height(18.dp))
 

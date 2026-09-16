@@ -55,6 +55,99 @@ object AppState {
     fun updateLanguage(code: String) { Session.language = code; language = code }
     fun updateDiscoverable(enabled: Boolean) { Session.discoverable = enabled; discoverable = enabled }
 
+    // boost tasks (community board)
+    val boostTasks = mutableStateListOf<com.tiktokboost.app.data.BoostTask>()
+
+    fun taskById(id: String) = boostTasks.firstOrNull { it.id == id }
+
+    /** Start an AVAILABLE task → IN_PROGRESS with a deadline. */
+    fun startTask(id: String): EconomyResult {
+        val t = taskById(id) ?: return EconomyResult.Failure(FailureReason.INVALID_STATE)
+        if (t.status != com.tiktokboost.app.data.BoostTaskStatus.AVAILABLE)
+            return EconomyResult.Failure(FailureReason.INVALID_STATE, "Task is not available.")
+        val now = System.currentTimeMillis()
+        Session.updateBoostTask(t.copy(
+            status = com.tiktokboost.app.data.BoostTaskStatus.IN_PROGRESS,
+            startedAt = now,
+            expiresAt = now + EconomyConfig.BOOST_TASK_HOURS * 3_600_000L
+        ))
+        refresh()
+        return EconomyResult.Success(0, "Task started — complete it within ${EconomyConfig.BOOST_TASK_HOURS}h")
+    }
+
+    /** Complete an IN_PROGRESS task → reward ONCE through the central economy. */
+    fun completeTask(id: String): EconomyResult {
+        val t = taskById(id) ?: return EconomyResult.Failure(FailureReason.INVALID_STATE)
+        when (t.status) {
+            com.tiktokboost.app.data.BoostTaskStatus.COMPLETED ->
+                return EconomyResult.Failure(FailureReason.DUPLICATE, "This task was already rewarded.")
+            com.tiktokboost.app.data.BoostTaskStatus.IN_PROGRESS -> { /* ok */ }
+            else -> return EconomyResult.Failure(FailureReason.INVALID_STATE, "Task is not in progress.")
+        }
+        // central economy grant; the "task:<id>" key gives duplicate protection
+        val grant = EconomyService.grantSmall("task:${t.id}", TxType.BONUS, t.reward, "Boost task: ${t.title}")
+        if (grant is EconomyResult.Failure) return grant
+        val now = System.currentTimeMillis()
+        Session.updateBoostTask(t.copy(
+            status = com.tiktokboost.app.data.BoostTaskStatus.COMPLETED,
+            completedAt = now,
+            rewardTransactionId = "bttx_${t.id}"
+        ))
+        Session.addNotification("boost", "Boost task completed: ${t.title}", "+${t.reward} coins added to your balance.")
+        checkAchievements()
+        refresh()
+        return EconomyResult.Success(t.reward, "Task completed · +${t.reward} coins")
+    }
+
+    /** Create a community task: the reward is STAKED from your balance up front. */
+    fun createTask(title: String, description: String, reward: Int): EconomyResult {
+        if (title.isBlank()) return EconomyResult.Failure(FailureReason.INVALID_STATE, "Add a title.")
+        if (reward < EconomyConfig.BOOST_TASK_MIN_REWARD || reward > EconomyConfig.BOOST_TASK_MAX_REWARD)
+            return EconomyResult.Failure(FailureReason.INVALID_STATE,
+                "Reward must be ${EconomyConfig.BOOST_TASK_MIN_REWARD}–${EconomyConfig.BOOST_TASK_MAX_REWARD} coins.")
+        val stake = EconomyService.spend("Task stake: $title", reward, TxType.BOOST)
+        if (stake is EconomyResult.Failure) return stake
+        val now = System.currentTimeMillis()
+        Session.addBoostTask(
+            com.tiktokboost.app.data.BoostTask(
+                id = "bt_$now",
+                title = title.trim(),
+                description = description.trim(),
+                reward = reward,
+                status = com.tiktokboost.app.data.BoostTaskStatus.AVAILABLE,
+                createdByMe = true,
+                expiresAt = now + 7 * 86_400_000L
+            )
+        )
+        Session.addNotification("boost", "Task published", "\"${title.trim()}\" is live on the community board. Your ${reward}-coin stake is held until it's completed.")
+        refresh()
+        return EconomyResult.Success(0, "Task published")
+    }
+
+    /** Expired sweep: in-progress tasks past their deadline expire (no reward, no punishment). */
+    private fun sweepExpiredTasks() {
+        val now = System.currentTimeMillis()
+        boostTasks.filter { it.status == com.tiktokboost.app.data.BoostTaskStatus.IN_PROGRESS && (it.expiresAt ?: 0) < now }
+            .forEach {
+                Session.updateBoostTask(it.copy(status = com.tiktokboost.app.data.BoostTaskStatus.EXPIRED))
+                Session.addNotification("boost", "Task expired", "\"${it.title}\" wasn't completed in time. You can start it again if it's still listed.")
+            }
+    }
+
+    /** Leaderboard: mock community ranked by lifetime earned, with YOUR real stats inserted. */
+    fun leaderboard(): List<Triple<String, Int, Boolean>> {
+        val rows = mutableListOf<Triple<String, Int, Boolean>>()
+        com.tiktokboost.app.data.MockData.users.forEach { u ->
+            // honest proxy for demo creators: their successful exchanges at the standard rate + activity
+            val pts = u.successfulExchanges * EconomyConfig.COINS_PER_CONFIRMED_EXCHANGE + u.activityScore / 2
+            rows.add(Triple(u.displayName, pts, false))
+        }
+        rows.add(Triple(Session.displayName.ifBlank { "You" }, Session.lifetimeEarned, true))
+        return rows.sortedByDescending { it.second }
+    }
+
+    fun myRank(): Int = leaderboard().indexOfFirst { it.third } + 1
+
     // referrals (persistent, repeatable)
     val referrals = mutableStateListOf<com.tiktokboost.app.data.Referral>()
 
@@ -207,6 +300,9 @@ object AppState {
         discoverable = Session.discoverable
         contentItems.clear(); contentItems.addAll(Session.contentItems())
         referrals.clear(); referrals.addAll(Session.referrals())
+        boostTasks.clear(); boostTasks.addAll(Session.boostTasks())
+        sweepExpiredTasks()
+        boostTasks.clear(); boostTasks.addAll(Session.boostTasks())   // re-sync after expiry sweep
         coins = Session.coins
         pendingCoins = EconomyService.pendingCoins()
         lifetimeEarned = Session.lifetimeEarned
