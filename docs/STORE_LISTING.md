@@ -56,6 +56,8 @@ creator community, grow audience, creator discovery, social exchange, trust scor
 | Feature graphic 1024×500 | ✅ | `art/feature-graphic.png` |
 | Phone screenshots | 📋 needed | Take 4–8 on a real device (Home, Discover, creator profile, Earn, Boost, Premium, Settings dark+light) |
 
+**Privacy policy URL (Play Console):** https://adangalma30-cloud.github.io/TicktokBoost/privacy.html
+
 ## Category
 
 Social · Content rating: Teen (user-generated content, no mature themes)

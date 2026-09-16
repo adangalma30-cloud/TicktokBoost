@@ -22,8 +22,9 @@
    - enable **Play App Signing** (recommended: Google holds the app signing key,
      you keep the upload key), or
    - rotate the `ANDROID_KEYSTORE_BASE64` CI secret to the new upload keystore.
-3. **Host the privacy policy** at a public URL (GitHub Pages on this repo works:
-   `docs/PRIVACY_POLICY.md` → `https://adangalma30-cloud.github.io/TicktokBoost/privacy`).
+3. **Privacy policy URL** ✅ DONE — live at
+   **https://adangalma30-cloud.github.io/TicktokBoost/privacy.html**
+   (source: `gh-pages` branch; landing page at .../TicktokBoost/).
 4. **Screenshots** — 4–8 phone screenshots (min 320px, max 3840px, 16:9 or 9:16):
    Home (dark + light), Discover with match chips, a creator profile with content,
    Earn/quests, Boost tiers, Premium comparison.
