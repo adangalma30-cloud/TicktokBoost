@@ -35,10 +35,30 @@ with points and featured placement.
 | `0.0.11` | FINAL MVP: expiration, blocking/reporting, match score + For You, setup wizard, profile pictures, referral dashboard, auth hardening | previous |
 | `0.0.12` | Settings system (working theme switch + persistence), public creator profiles with photo/video content, content management | previous |
 | `0.0.13` | Referral system rebuilt: persistent per-friend records, repeatable rewards (idempotent, daily-limited), permanent Invite Friends section | previous |
-| `version-1.0.1` | Icon scaling + Daily Check-in fixes; Boost task board (create/start/complete/expire), leaderboard, dashboard & profile stats, security notes; Profile/Content UX polish (dedicated edit screen, ⋯ content menus) | current |
+| `version-1.0.1` | Icon scaling + Daily Check-in fixes; Boost task board (create/start/complete/expire), leaderboard, dashboard & profile stats, security notes; Profile/Content UX polish (dedicated edit screen, ⋯ content menus) | previous |
+| `version-1.0.3` | Backend & database foundation: Room schema (8 entities), DatabaseMirror write-through ledger, hashed-password auth (PBKDF2), layered architecture, BACKEND.md cloud seam | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v1.0.3 (backend & database foundation)
+
+- Layered architecture made real: UI → application services (EconomyService / Quests /
+  AuthService / AppState) → DatabaseMirror (repository seam) → Room/SQLite database.
+  The UI never manipulates balances directly.
+- Full database schema (see `docs/BACKEND.md`): users, profiles, content, boosts,
+  boost_completions, point_transactions, daily_checkins, notifications. Balances are
+  derived from the ledger (SUM), never stored raw.
+- Every economy transaction is written to the `point_transactions` ledger with user,
+  signed amount, type, reason, timestamp and idempotent reference id.
+- Auth foundation: register/login/logout with PBKDF2WithHmacSHA256-hashed passwords
+  (24k iterations, per-user salt — never plaintext); wrong passwords are rejected;
+  legacy demo installs gain an account transparently on first login.
+- Content ownership enforced in SQL (delete scoped to the owning user).
+- Check-ins, notifications, profiles and boost tasks mirrored to the database
+  (write-through); one-time legacy migration seeds the DB on first launch.
+- Cloud activation seam documented in `docs/BACKEND.md` (Supabase/Firebase-ready;
+  requires the project owner's backend account + keys — no secrets in code).
 
 ## What's new in v0.0.13 (referral system + audit)
 

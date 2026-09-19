@@ -18,8 +18,24 @@ object Session {
     private const val PREFS = "tiktokboost_prefs"
     private lateinit var sp: SharedPreferences
 
+    /** Stable per-install user id (backend-ready identity for the local DB). */
+    val userDbId: String by lazy {
+        val existing = sp.getString("user_db_id", null)
+        if (existing != null) existing else {
+            val id = "u_" + java.util.UUID.randomUUID().toString().take(18)
+            sp.edit().putString("user_db_id", id).apply()
+            id
+        }
+    }
+
+    var dbSeeded: Boolean
+        get() = sp.getBoolean("db_seeded", false)
+        set(value) { sp.edit().putBoolean("db_seeded", value).apply() }
+
     fun init(context: Context) {
         sp = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        com.tiktokboost.app.data.db.DatabaseMirror.init(context)
+        com.tiktokboost.app.data.auth.AuthService.init(context)
         migrateV1()
         migrateV2toV3()
     }
@@ -414,6 +430,7 @@ object Session {
         o.put("id", id); o.put("kind", kind); o.put("title", title)
         o.put("message", message); o.put("ts", timestamp); o.put("read", false)
         arr.put(o)
+        com.tiktokboost.app.data.db.DatabaseMirror.notification(id, kind, title, message, false, timestamp)
         while (arr.length() > 50) arr.remove(0)
         sp.edit().putString("notifications", arr.toString()).apply()
     }
@@ -507,6 +524,10 @@ object Session {
         streakDays = if (last == yesterday()) streakDays + 1 else 1
         streakLastDay = today()
         if (streakDays > streakBest) streakBest = streakDays
+        // v1.0.3: persist check-in state AFTER the streak update
+        com.tiktokboost.app.data.db.DatabaseMirror.checkIn(
+            System.currentTimeMillis(), streakDays, streakBest
+        )
         return streakDays
     }
 
@@ -575,6 +596,7 @@ object Session {
         o.put("updated", item.updatedAt); o.put("demo", item.demoVisual ?: "")
         arr.put(o)
         saveContent(arr)
+        com.tiktokboost.app.data.db.DatabaseMirror.content(item)
     }
 
     fun updateContentItem(item: ContentItem) {
@@ -583,7 +605,9 @@ object Session {
             val o = arr.optJSONObject(i) ?: continue
             if (o.optString("id") == item.id) {
                 o.put("caption", item.caption); o.put("updated", item.updatedAt)
-                arr.put(i, o); saveContent(arr); return
+                arr.put(i, o); saveContent(arr)
+                com.tiktokboost.app.data.db.DatabaseMirror.content(item)
+                return
             }
         }
     }
@@ -591,7 +615,11 @@ object Session {
     fun deleteContentItem(id: String) {
         val arr = contentJson()
         for (i in 0 until arr.length()) {
-            if (arr.optJSONObject(i)?.optString("id") == id) { arr.remove(i); saveContent(arr); return }
+            if (arr.optJSONObject(i)?.optString("id") == id) {
+                arr.remove(i); saveContent(arr)
+                com.tiktokboost.app.data.db.DatabaseMirror.contentDeleted(id)
+                return
+            }
         }
     }
 

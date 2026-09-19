@@ -362,9 +362,12 @@ object EconomyService {
     // ── helpers ──────────────────────────────────────────────────────────
     private fun addTx(username: String, userId: String?, type: TxType, status: TxStatus, coins: Int, reason: String) {
         val now = System.currentTimeMillis()
+        val txId = "tx_$now" + "_${type.ordinal}"
         Session.addTransaction(
-            Transaction("tx_$now" + "_${type.ordinal}", userId, username, type, status, coins, now, now, reason)
+            Transaction(txId, userId, username, type, status, coins, now, now, reason)
         )
+        // v1.0.3: durable ledger record — user, amount, type, reason, timestamp
+        com.tiktokboost.app.data.db.DatabaseMirror.ledger(txId, coins, type.name, reason, now, txId)
     }
 
     private fun hasDuplicate(type: TxType, username: String, minutes: Int, excludeTxId: String? = null): Boolean {

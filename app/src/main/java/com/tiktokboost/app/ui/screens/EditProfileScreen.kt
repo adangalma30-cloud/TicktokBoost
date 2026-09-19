@@ -191,6 +191,10 @@ fun EditProfileScreen(onBack: () -> Unit) {
                             Session.tiktokUsername = tiktok.trim().removePrefix("@").ifBlank { "creator" }
                             Session.bio = bio.trim().take(160)
                             Session.category = category
+                            com.tiktokboost.app.data.db.DatabaseMirror.profile(
+                                Session.displayName, Session.tiktokUsername,
+                                Session.bio, Session.profilePicturePath, Session.category
+                            )
                             AppState.checkAchievements()
                             AppState.refresh()
                             saved = true

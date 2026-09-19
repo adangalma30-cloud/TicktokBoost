@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -11,8 +12,8 @@ android {
         applicationId = "com.tiktokboost.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 16
-        versionName = "1.0.1"
+        versionCode = 17
+        versionName = "1.0.3"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -74,6 +75,11 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // v1.0.3 — local database foundation (Room/SQLite); cloud endpoints plug in behind repositories
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.12.2")

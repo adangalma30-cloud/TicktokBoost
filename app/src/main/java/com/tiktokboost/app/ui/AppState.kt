@@ -66,11 +66,13 @@ object AppState {
         if (t.status != com.tiktokboost.app.data.BoostTaskStatus.AVAILABLE)
             return EconomyResult.Failure(FailureReason.INVALID_STATE, "Task is not available.")
         val now = System.currentTimeMillis()
-        Session.updateBoostTask(t.copy(
+        val updated = t.copy(
             status = com.tiktokboost.app.data.BoostTaskStatus.IN_PROGRESS,
             startedAt = now,
             expiresAt = now + EconomyConfig.BOOST_TASK_HOURS * 3_600_000L
-        ))
+        )
+        Session.updateBoostTask(updated)
+        com.tiktokboost.app.data.db.DatabaseMirror.boostTask(updated)
         refresh()
         return EconomyResult.Success(0, "Task started — complete it within ${EconomyConfig.BOOST_TASK_HOURS}h")
     }
@@ -88,11 +90,13 @@ object AppState {
         val grant = EconomyService.grantSmall("task:${t.id}", TxType.BONUS, t.reward, "Boost task: ${t.title}")
         if (grant is EconomyResult.Failure) return grant
         val now = System.currentTimeMillis()
-        Session.updateBoostTask(t.copy(
+        val completed = t.copy(
             status = com.tiktokboost.app.data.BoostTaskStatus.COMPLETED,
             completedAt = now,
             rewardTransactionId = "bttx_${t.id}"
-        ))
+        )
+        Session.updateBoostTask(completed)
+        com.tiktokboost.app.data.db.DatabaseMirror.boostTask(completed)
         Session.addNotification("boost", "Boost task completed: ${t.title}", "+${t.reward} coins added to your balance.")
         checkAchievements()
         refresh()
@@ -108,17 +112,17 @@ object AppState {
         val stake = EconomyService.spend("Task stake: $title", reward, TxType.BOOST)
         if (stake is EconomyResult.Failure) return stake
         val now = System.currentTimeMillis()
-        Session.addBoostTask(
-            com.tiktokboost.app.data.BoostTask(
-                id = "bt_$now",
-                title = title.trim(),
-                description = description.trim(),
-                reward = reward,
-                status = com.tiktokboost.app.data.BoostTaskStatus.AVAILABLE,
-                createdByMe = true,
-                expiresAt = now + 7 * 86_400_000L
-            )
+        val task = com.tiktokboost.app.data.BoostTask(
+            id = "bt_$now",
+            title = title.trim(),
+            description = description.trim(),
+            reward = reward,
+            status = com.tiktokboost.app.data.BoostTaskStatus.AVAILABLE,
+            createdByMe = true,
+            expiresAt = now + 7 * 86_400_000L
         )
+        Session.addBoostTask(task)
+        com.tiktokboost.app.data.db.DatabaseMirror.boostTask(task)
         Session.addNotification("boost", "Task published", "\"${title.trim()}\" is live on the community board. Your ${reward}-coin stake is held until it's completed.")
         refresh()
         return EconomyResult.Success(0, "Task published")

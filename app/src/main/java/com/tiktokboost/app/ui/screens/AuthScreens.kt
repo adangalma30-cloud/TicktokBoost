@@ -102,10 +102,17 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
                 } else if (!passOk(password)) {
                     error = "Password must be at least 6 characters."
                 } else {
-                    error = null
-                    Session.isLoggedIn = true
-                    AppState.refresh()
-                    onDone()
+                    val res = com.tiktokboost.app.data.auth.AuthService.login(
+                        Session.userDbId, email.trim(), password
+                    )
+                    if (res.ok) {
+                        error = null
+                        Session.isLoggedIn = true
+                        AppState.refresh()
+                        onDone()
+                    } else {
+                        error = res.error
+                    }
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -220,9 +227,19 @@ fun SignupScreen(onDone: () -> Unit, onBack: () -> Unit) {
                     referralCode.trim().equals(Session.referralCode(), ignoreCase = true) && referralCode.isNotBlank() ->
                         error = "You can't use your own referral code."
                     else -> {
+                    val reg = com.tiktokboost.app.data.auth.AuthService.register(
+                        Session.userDbId, email.trim(), password
+                    )
+                    if (!reg.ok) {
+                        error = reg.error
+                        return@BrandButton
+                    }
                     Session.displayName = name.trim()
                     Session.email = email.trim()
                     Session.tiktokUsername = handle
+                    com.tiktokboost.app.data.db.DatabaseMirror.profile(
+                        name.trim(), handle, "", null, ""
+                    )
                     Session.isLoggedIn = true
                     AppState.starterBonus(handle)
                     Session.addNotification(
