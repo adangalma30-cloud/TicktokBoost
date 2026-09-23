@@ -138,6 +138,14 @@ fun TikTokBoostApp() {
             }
         }
     ) { padding ->
+        // v1.0.4: notification tapped while app is foreground/background (singleTop onNewIntent)
+        val deepLink = com.tiktokboost.app.data.notify.TickTokNotifications.pendingRoute
+        androidx.compose.runtime.LaunchedEffect(deepLink) {
+            deepLink?.let { route ->
+                com.tiktokboost.app.data.notify.TickTokNotifications.pendingRoute = null
+                navController.navigate(route)
+            }
+        }
         NavHost(
             navController = navController,
             startDestination = Routes.SPLASH,
@@ -149,7 +157,13 @@ fun TikTokBoostApp() {
         ) {
             composable(Routes.SPLASH) {
                 SplashScreen(onDone = {
-                    navController.navigate(postSplashStart()) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                    val start = postSplashStart()
+                    navController.navigate(start) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                    // v1.0.4: a notification was tapped (cold start) → deep link to its screen
+                    com.tiktokboost.app.data.notify.TickTokNotifications.pendingRoute?.let { route ->
+                        com.tiktokboost.app.data.notify.TickTokNotifications.pendingRoute = null
+                        if (route != start) navController.navigate(route)
+                    }
                 })
             }
             composable(Routes.ONBOARDING) {
@@ -239,7 +253,10 @@ fun TikTokBoostApp() {
                 HistoryScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.NOTIFICATIONS) {
-                NotificationsScreen(onBack = { navController.popBackStack() })
+                NotificationsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenRoute = { route -> navController.navigate(route) }
+                )
             }
             composable(Routes.PREMIUM) {
                 PremiumScreen(onBack = { navController.popBackStack() })

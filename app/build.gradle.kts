@@ -12,8 +12,8 @@ android {
         applicationId = "com.tiktokboost.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 17
-        versionName = "1.0.3"
+        versionCode = 18
+        versionName = "1.0.4"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -77,6 +77,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // v1.0.3 — local database foundation (Room/SQLite); cloud endpoints plug in behind repositories
+    // v1.0.4 — background reminders (closed-app notifications)
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")

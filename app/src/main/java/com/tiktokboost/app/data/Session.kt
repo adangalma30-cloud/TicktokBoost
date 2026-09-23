@@ -17,6 +17,7 @@ object Session {
 
     private const val PREFS = "tiktokboost_prefs"
     private lateinit var sp: SharedPreferences
+    internal lateinit var appContext: android.content.Context   // v1.0.4: system notifications
 
     /** Stable per-install user id (backend-ready identity for the local DB). */
     val userDbId: String by lazy {
@@ -33,6 +34,7 @@ object Session {
         set(value) { sp.edit().putBoolean("db_seeded", value).apply() }
 
     fun init(context: Context) {
+        appContext = context.applicationContext
         sp = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         com.tiktokboost.app.data.db.DatabaseMirror.init(context)
         com.tiktokboost.app.data.auth.AuthService.init(context)
@@ -426,11 +428,21 @@ object Session {
         }
         var n = 2
         while (id in taken) { id = "n_${timestamp}_$n"; n++ }
+        val target = com.tiktokboost.app.data.notify.TickTokNotifications.routeForKind(kind)
         val o = JSONObject()
         o.put("id", id); o.put("kind", kind); o.put("title", title)
         o.put("message", message); o.put("ts", timestamp); o.put("read", false)
+        o.put("target", target)
         arr.put(o)
         com.tiktokboost.app.data.db.DatabaseMirror.notification(id, kind, title, message, false, timestamp)
+        // v1.0.4: real system notification (status bar, TickTokBoost icon, deep link)
+        try {
+            com.tiktokboost.app.data.notify.TickTokNotifications.post(
+                appContext, timestamp, kind, title, message, target
+            )
+        } catch (e: Exception) {
+            // notification failures must never break the app
+        }
         while (arr.length() > 50) arr.remove(0)
         sp.edit().putString("notifications", arr.toString()).apply()
     }
@@ -444,7 +456,8 @@ object Session {
                 AppNotification(
                     id = o.optString("id"), kind = o.optString("kind", "system"),
                     title = o.optString("title"), message = o.optString("message"),
-                    timestamp = o.optLong("ts"), read = o.optBoolean("read")
+                    timestamp = o.optLong("ts"), read = o.optBoolean("read"),
+                    target = o.optString("target").ifEmpty { null }
                 )
             )
         }
@@ -453,6 +466,41 @@ object Session {
     }
 
     fun unreadNotificationCount(): Int = notifications().count { !it.read }
+
+    fun markNotificationRead(id: String) {
+        val arr = notifJson()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            if (o.optString("id") == id) {
+                o.put("read", true); arr.put(i, o)
+                sp.edit().putString("notifications", arr.toString()).apply()
+                return
+            }
+        }
+    }
+
+    fun markNotificationUnread(id: String) {
+        val arr = notifJson()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            if (o.optString("id") == id) {
+                o.put("read", false); arr.put(i, o)
+                sp.edit().putString("notifications", arr.toString()).apply()
+                return
+            }
+        }
+    }
+
+    fun deleteNotification(id: String) {
+        val arr = notifJson()
+        for (i in 0 until arr.length()) {
+            if (arr.optJSONObject(i)?.optString("id") == id) {
+                arr.remove(i)
+                sp.edit().putString("notifications", arr.toString()).apply()
+                return
+            }
+        }
+    }
 
     fun markAllNotificationsRead() {
         val arr = notifJson()

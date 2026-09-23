@@ -726,6 +726,21 @@ object AppState {
         refresh()
     }
 
+    fun markNotificationRead(id: String) {
+        Session.markNotificationRead(id)
+        refresh()
+    }
+
+    fun markNotificationUnread(id: String) {
+        Session.markNotificationUnread(id)
+        refresh()
+    }
+
+    fun deleteNotification(id: String) {
+        Session.deleteNotification(id)
+        refresh()
+    }
+
     fun followStatus(userId: String): String? = Session.followStatus(userId)
 
     fun transactionFor(userId: String?): Transaction? =

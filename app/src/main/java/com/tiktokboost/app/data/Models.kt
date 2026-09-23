@@ -59,7 +59,8 @@ data class AppNotification(
     val title: String,
     val message: String,
     val timestamp: Long,
-    val read: Boolean = false
+    val read: Boolean = false,
+    val target: String? = null      // v1.0.4: deep-link route for tap-through actions
 )
 
 data class FollowEvent(

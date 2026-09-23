@@ -36,10 +36,32 @@ with points and featured placement.
 | `0.0.12` | Settings system (working theme switch + persistence), public creator profiles with photo/video content, content management | previous |
 | `0.0.13` | Referral system rebuilt: persistent per-friend records, repeatable rewards (idempotent, daily-limited), permanent Invite Friends section | previous |
 | `version-1.0.1` | Icon scaling + Daily Check-in fixes; Boost task board (create/start/complete/expire), leaderboard, dashboard & profile stats, security notes; Profile/Content UX polish (dedicated edit screen, ⋯ content menus) | previous |
-| `version-1.0.3` | Backend & database foundation: Room schema (8 entities), DatabaseMirror write-through ledger, hashed-password auth (PBKDF2), layered architecture, BACKEND.md cloud seam | current |
+| `version-1.0.3` | Backend & database foundation: Room schema (8 entities), DatabaseMirror write-through ledger, hashed-password auth (PBKDF2), layered architecture, BACKEND.md cloud seam | previous |
+| `version-1.0.4` | Notifications & communication: real Android system notifications (dedicated monochrome icon, channels, deep links), WorkManager background reminders, upgraded Notification Center (read/unread/delete, tap-through) | current |
 
 Workflow: every update creates a new branch (`0.0.1`, `0.0.2`, …) carrying only the
 files needed for that version. `main` is never modified.
+
+## What's new in v1.0.4 (notifications & communication)
+
+- Real Android system notifications: status-bar posts with the dedicated
+  monochrome Creator Rise notification icon (alpha-only small icon — proper
+  Android practice; launcher icon unchanged), four channels (rewards, boosts,
+  reminders, system), BigText styling, tap deep links.
+- Deep links: every notification opens the relevant screen (check-in → Earn,
+  boost → Boost, rewards → history, trust → Profile, generic → Notification
+  Center), including cold starts and singleTop taps while running.
+- Background/closed-app capability: WorkManager periodic reminders post
+  "Daily reward ready 🎁" and "Boost ending soon ⏳" while the app is closed
+  (respects the notifications toggle; a remote push provider can plug into the
+  same path later).
+- Notification Center rebuilt: per-kind icons, bold unread + cyan dot vs muted
+  read, timestamps, tap-through actions, ⋯ menus (mark read/unread, delete),
+  mark-all-read; read state persists across restarts.
+- Badge consistency: the unread count updates on new/read/unread/deleted
+  everywhere (test-verified). Android 13+ POST_NOTIFICATIONS permission
+  requested at launch; posting is permission- and toggle-aware and never
+  crashes the app.
 
 ## What's new in v1.0.3 (backend & database foundation)
 

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TickTokBoost notification icon: monochrome Creator Rise silhouette
+     (alpha-only — Android status-bar small icon best practice).
+     Derived from the launcher branding; the launcher icon itself is unchanged. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M5.89,8.222222222222221 a2.33,2.33 0 1 0 4.67,0 a2.33,2.33 0 1 0 -4.67,0 Z M7.33,11.56 H9.11 A2.44,2.44 0 0 1 11.56,14.00 V15.11 A2.44,2.44 0 0 1 9.11,17.56 H7.33 A2.44,2.44 0 0 1 4.89,15.11 V14.00 A2.44,2.44 0 0 1 7.33,11.56 Z M13.89,12.67 H13.89 A1.00,1.00 0 0 1 14.89,13.67 V16.56 A1.00,1.00 0 0 1 13.89,17.56 H13.89 A1.00,1.00 0 0 1 12.89,16.56 V13.67 A1.00,1.00 0 0 1 13.89,12.67 Z M16.56,10.00 H16.56 A1.00,1.00 0 0 1 17.56,11.00 V16.56 A1.00,1.00 0 0 1 16.56,17.56 H16.56 A1.00,1.00 0 0 1 15.56,16.56 V11.00 A1.00,1.00 0 0 1 16.56,10.00 Z M19.22,7.11 H19.22 A1.00,1.00 0 0 1 20.22,8.11 V16.56 A1.00,1.00 0 0 1 19.22,17.56 H19.22 A1.00,1.00 0 0 1 18.22,16.56 V8.11 A1.00,1.00 0 0 1 19.22,7.11 Z" />
+</vector>
